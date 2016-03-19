@@ -1,6 +1,6 @@
 #include "include/binary_expression_ast.h"
 
-BinaryExpressionAST::BinaryExpressionAST(Operator op, ASTPTR lhs, ASTPTR rhs):AST(Type::NUMBER), op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {
+BinaryExpressionAST::BinaryExpressionAST(Operator op, Type type, ASTPTR lhs, ASTPTR rhs):AST(type), op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {
 }
 
 void BinaryExpressionAST::accept(Visitor &visitor) {

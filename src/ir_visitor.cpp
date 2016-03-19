@@ -1,6 +1,7 @@
 #include "include/ir_visitor.h"
 
 #include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/APInt.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/raw_os_ostream.h"
 
@@ -9,8 +10,7 @@ void IRVisitor::visit(NumberConstAST *ast) {
 }
 
 void IRVisitor::visit(BoolConstAST *ast) {
-	// zu bool Wert ändern
-	currentValue = llvm::ConstantFP::get(llvm::getGlobalContext(), llvm::APFloat(ast->getValue()?1.0:0.0));
+	currentValue = llvm::ConstantInt::get(llvm::getGlobalContext(), llvm::APInt(8, ast->getValue()?1:0, true));
 }
 
 void IRVisitor::visit(BinaryExpressionAST *ast) {
@@ -18,24 +18,68 @@ void IRVisitor::visit(BinaryExpressionAST *ast) {
 	llvm::Value *lhs = currentValue;
 	ast->getRHS()->accept(*this);
 	llvm::Value *rhs = currentValue;
-	switch(ast->getOperator()) {
-		case Operator::ADD:
-		currentValue = builder.CreateFAdd(lhs, rhs, "addtmp");
-		break;
-		case Operator::SUB:
-		currentValue = builder.CreateFSub(lhs, rhs, "dubtmp");
-		break;
-		case Operator::MULT:
-		currentValue = builder.CreateFMul(lhs, rhs, "multmp");
-		break;
-		case Operator::DIV:
-		currentValue = builder.CreateFDiv(lhs, rhs, "divtmp");
-		break;
-		default:
-		fprintf(stderr, "wrong operator\n");
-		// error
-		// currentValue = nullptr;
-		break;
+	auto type = ast->getLHS()->getType();
+	if(type == Type::NUMBER) {
+		switch(ast->getOperator()) {
+			case Operator::ADD:
+			currentValue = builder.CreateFAdd(lhs, rhs, "addFloat");
+			break;
+			case Operator::SUB:
+			currentValue = builder.CreateFSub(lhs, rhs, "subFloat");
+			break;
+			case Operator::MULT:
+			currentValue = builder.CreateFMul(lhs, rhs, "multFloat");
+			break;
+			case Operator::DIV:
+			currentValue = builder.CreateFDiv(lhs, rhs, "divFloat");
+			break;
+			case Operator::EQ:
+			currentValue = builder.CreateFCmpOEQ(lhs, rhs, "eqFloat");
+			break;
+			case Operator::NE:
+			currentValue = builder.CreateFCmpUNE(lhs, rhs, "neFloat");
+			break;
+			case Operator::LT:
+			currentValue = builder.CreateFCmpULT(lhs, rhs, "ltFloat");
+			break;
+			case Operator::LE:
+			currentValue = builder.CreateFCmpULE(lhs, rhs, "leFloat");
+			break;
+			case Operator::GT:
+			currentValue = builder.CreateFCmpUGT(lhs, rhs, "gtFloat");
+			break;
+			case Operator::GE:
+			currentValue = builder.CreateFCmpUGE(lhs, rhs, "geFloat");
+			break;
+			default:
+			fprintf(stderr, "wrong operator\n");
+			// error
+			// currentValue = nullptr;
+			break;
+		}
+	} else if(type == Type::BOOL) {
+		switch(ast->getOperator()) {
+			case Operator::EQ:
+			currentValue = builder.CreateICmpEQ(lhs, rhs, "eqBool");
+			break;
+			case Operator::NE:
+			currentValue = builder.CreateICmpNE(lhs, rhs, "neBool");
+			break;
+			case Operator::AND:
+			currentValue = builder.CreateAnd(lhs, rhs, "andBool");
+			break;
+			case Operator::OR:
+			currentValue = builder.CreateOr(lhs, rhs, "orBool");
+			break;
+			case Operator::ADD:
+			currentValue = builder.CreateXor(lhs, rhs, "xorFloat");
+			break;
+			default:
+			fprintf(stderr, "wrong operator\n");
+			// error
+			// currentValue = nullptr;
+			break;
+		}
 	}
 }
 

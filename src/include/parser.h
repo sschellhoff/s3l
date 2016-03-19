@@ -25,6 +25,7 @@ private:
 	std::vector<std::string> functionDeclarations;
 	std::unique_ptr<std::vector<std::unique_ptr<FunctionDefinitionAST>>> functionASTs;
 	bool isValidOperator(const Operator op, const Type t1, const Type t2)const;
+	Type determineOperatorResult(const Operator op, const Type t1, const Type t2)const;
 	void makeError(const std::string &msg);
 	void consumeToken();
 	bool isIdentifier(const std::string &name);

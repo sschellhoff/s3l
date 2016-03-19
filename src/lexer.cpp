@@ -22,6 +22,10 @@ void Lexer::initOperators() {
 	operators.push_back(Operator::LE);
 	operators.push_back(Operator::GT);
 	operators.push_back(Operator::GE);
+	operators.push_back(Operator::EQ);
+	operators.push_back(Operator::NE);
+	operators.push_back(Operator::AND);
+	operators.push_back(Operator::OR);
 }
 
 void Lexer::setInput(const std::string &input) {
@@ -120,6 +124,34 @@ Token Lexer::getNext() {
 				case '}':
 					currentPos++;
 					return Token(TokenType::RBLOCK, 1);
+				case '=':
+					currentPos++;
+					if(inputLeft() && input[currentPos] == '=') {
+						currentPos++;
+						return Token(TokenType::OPERATOR, 8);
+					}
+					return Token(TokenType::ERROR);
+				case '!':
+					currentPos++;
+					if(inputLeft() && input[currentPos] == '=') {
+						currentPos++;
+						return Token(TokenType::OPERATOR, 9);
+					}
+					return Token(TokenType::ERROR);
+				case '&':
+					currentPos++;
+					if(inputLeft() && input[currentPos] == '&') {
+						currentPos++;
+						return Token(TokenType::OPERATOR, 10);
+					}
+					return Token(TokenType::ERROR);
+				case '|':
+					currentPos++;
+					if(inputLeft() && input[currentPos] == '|') {
+						currentPos++;
+						return Token(TokenType::OPERATOR, 11);
+					}
+					return Token(TokenType::ERROR);
 				default:
 				break;
 			}

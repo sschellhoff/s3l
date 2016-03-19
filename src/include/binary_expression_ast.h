@@ -12,7 +12,7 @@ private:
 	Operator op;
 	std::unique_ptr<AST> lhs, rhs;
 public:
-	BinaryExpressionAST(Operator op, ASTPTR lhs, ASTPTR rhs);
+	BinaryExpressionAST(Operator op, Type type, ASTPTR lhs, ASTPTR rhs);
 
 	virtual void accept(Visitor &visitor);
 

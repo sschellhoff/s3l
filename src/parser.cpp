@@ -10,14 +10,18 @@
 #include <fstream>
 
 Parser::Parser(std::ostream &errorStream):currentToken(TokenType::ERROR), errorStream(errorStream), functionASTs(std::make_unique<std::vector<std::unique_ptr<FunctionDefinitionAST>>>()) {
-	operatorPrecedences[Operator::LT] = 5;
-	operatorPrecedences[Operator::LE] = 5;
-	operatorPrecedences[Operator::GT] = 5;
-	operatorPrecedences[Operator::GE] = 5;
-	operatorPrecedences[Operator::ADD] = 10;
-	operatorPrecedences[Operator::SUB] = 20;
-	operatorPrecedences[Operator::MULT] = 30;
-	operatorPrecedences[Operator::DIV] = 40;
+	operatorPrecedences[Operator::OR] = 30;
+	operatorPrecedences[Operator::AND] = 40;
+	operatorPrecedences[Operator::EQ] = 50;
+	operatorPrecedences[Operator::NE] = 50;
+	operatorPrecedences[Operator::LT] = 60;
+	operatorPrecedences[Operator::LE] = 60;
+	operatorPrecedences[Operator::GT] = 60;
+	operatorPrecedences[Operator::GE] = 60;
+	operatorPrecedences[Operator::ADD] = 70;
+	operatorPrecedences[Operator::SUB] = 80;
+	operatorPrecedences[Operator::MULT] = 90;
+	operatorPrecedences[Operator::DIV] = 100;
 }
 
 bool Parser::isValidOperator(const Operator op, const Type t1, const Type t2)const {
@@ -25,7 +29,11 @@ bool Parser::isValidOperator(const Operator op, const Type t1, const Type t2)con
 		return false;
 	}
 	switch(op) {
+		case Operator::EQ:
+		case Operator::NE:
+			return true;
 		case Operator::ADD:
+			return t1 == Type::NUMBER || t1 == Type::BOOL;
 		case Operator::SUB:
 		case Operator::MULT:
 		case Operator::DIV:
@@ -39,6 +47,27 @@ bool Parser::isValidOperator(const Operator op, const Type t1, const Type t2)con
 			return t1 == Type::BOOL;
 		default:
 			return false;
+	}
+}
+
+Type Parser::determineOperatorResult(const Operator op, const Type t1, const Type t2)const {
+	switch(op) {
+		case Operator::EQ:
+		case Operator::NE:
+		case Operator::LT:
+		case Operator::LE:
+		case Operator::GT:
+		case Operator::GE:
+		case Operator::AND:
+		case Operator::OR:
+			return Type::BOOL;
+		case Operator::ADD:
+		case Operator::SUB:
+		case Operator::MULT:
+		case Operator::DIV:
+			return t1;
+		default:
+			return Type::VOID;
 	}
 }
 
@@ -212,7 +241,13 @@ ASTPTR Parser::parseBinaryExpressionRHS(int operatorPrecedence, ASTPTR lhs) {
 			makeError("wrong operands");
 			return nullptr;
 		}
-		lhs = std::make_unique<BinaryExpressionAST>(op, std::move(lhs), std::move(rhs));
+		Type resultType = determineOperatorResult(op, lhs->getType(), rhs->getType());
+		if (resultType == Type::VOID) {
+			makeError("unknown operator");
+			return nullptr;
+		}
+		lhs = std::make_unique<BinaryExpressionAST>(op, resultType, std::move(lhs), std::move(rhs));
+
 	}
 }
 
