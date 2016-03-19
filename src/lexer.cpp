@@ -152,6 +152,9 @@ Token Lexer::getNext() {
 						return Token(TokenType::OPERATOR, 11);
 					}
 					return Token(TokenType::ERROR);
+				case ';':
+					currentPos++;
+					return Token(TokenType::SEMICOLON, 0);
 				default:
 				break;
 			}

@@ -10,7 +10,8 @@ enum class TokenType {
 	LPAR,
 	RPAR,
 	LBLOCK,
-	RBLOCK
+	RBLOCK,
+	SEMICOLON
 };
 
 class Token {
