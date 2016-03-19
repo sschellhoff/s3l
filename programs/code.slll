@@ -1,3 +1,7 @@
-main() {
-	true + true
+check() number {
+	42
+}
+
+main() bool {
+	1337 == check()
 }

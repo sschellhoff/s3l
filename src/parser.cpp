@@ -91,24 +91,33 @@ bool Parser::tryConsumeIdentifier(const std::string &name) {
 	return false;
 }
 
-bool Parser::isFunctionDefined(const std::string &name) {
-	auto result = std::find(functionDefinitions.begin(), functionDefinitions.end(), name);
-	return result != functionDefinitions.end();
-}
-
-bool Parser::isFunctionDeclared(const std::string &name) {
-	auto result = std::find(functionDeclarations.begin(), functionDeclarations.end(), name);
-	return result != functionDeclarations.end();
-}
-
-bool Parser::removeDeclarationIfNeeded(const std::string &name) {
-	auto result = std::find(functionDeclarations.begin(), functionDeclarations.end(), name);
-	if(result == functionDeclarations.end()) {
-		return false;
+bool Parser::isFunctionDefined(const std::string &name, Type resultType) {
+	for(auto &funcDef : functionDefinitions) {
+		if(funcDef.getName() == name && funcDef.getResultType() == resultType) {
+			return true;
+		}
 	}
-	std::swap(*result, functionDeclarations.back());
-	functionDeclarations.pop_back();
-	return true;
+	return false;
+}
+
+bool Parser::isFunctionDeclared(const std::string &name, Type resultType) {
+	for(auto &funcDef : functionDeclarations) {
+		if(funcDef.getName() == name && funcDef.getResultType() == resultType) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool Parser::removeDeclarationIfNeeded(const std::string &name, Type resultType) {
+	for(auto it = functionDeclarations.begin(); it != functionDeclarations.end(); it++) {
+		if(it->getName() == name && it->getResultType() == resultType) {
+			std::swap(*it, functionDeclarations.back());
+			functionDeclarations.pop_back();
+			return true;
+		}
+	}
+	return false;
 }
 
 FUNCVECPTR Parser::parse(const std::string &program) {
@@ -268,6 +277,20 @@ bool Parser::parseFunctionDefinition() {
 		return false;
 	}
 	consumeToken();
+	Type resultType = Type::VOID;
+	if(currentToken.getTokenType() == TokenType::IDENTIFIER) {
+		auto typeString = lexer.getIdentifierString(currentToken.getValueIndex());
+		consumeToken();
+
+		if(typeString == "bool") {
+			resultType = Type::BOOL;
+		} else if(typeString == "number") {
+			resultType = Type::NUMBER;
+		} else {
+			makeError("unknown function result type");
+			return false;
+		}
+	}
 	if(currentToken.getTokenType() == TokenType::LBLOCK) {
 		consumeToken();
 		auto body = parseExpression();
@@ -280,17 +303,25 @@ bool Parser::parseFunctionDefinition() {
 			return false;
 		}
 		consumeToken();
-		if(isFunctionDefined(functionName)) {
+		if(isFunctionDefined(functionName, resultType)) {
 			makeError("doubled function definition");
 			return false;
 		}
-		removeDeclarationIfNeeded(functionName);
-		functionDefinitions.push_back(functionName);
-		functionASTs->push_back(std::make_unique<FunctionDefinitionAST>(functionName, body->getType(), std::move(body)));
+		removeDeclarationIfNeeded(functionName, resultType);
+		functionDefinitions.push_back(FunctionPrototype(functionName, resultType));
+		if(body->getType() != resultType) {
+			makeError("result of function body and function prototype do not match");
+			return false;
+		}
+		functionASTs->push_back(std::make_unique<FunctionDefinitionAST>(functionName, resultType, std::move(body)));
 		return true;
+	} else if(currentToken.getTokenType() == TokenType::SEMICOLON) {
+		if(!isFunctionDefined(functionName, resultType) && !isFunctionDeclared(functionName, resultType)) {
+			functionDeclarations.push_back(FunctionPrototype(functionName, resultType));
+		}
+		return true;
+	} else {
+		makeError("missing ; in function declaration");
+		return false;
 	}
-	if(!isFunctionDefined(functionName) && !isFunctionDeclared(functionName)) {
-		functionDeclarations.push_back(functionName);
-	}
-	return true;
 }

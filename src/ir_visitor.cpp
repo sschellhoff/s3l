@@ -10,7 +10,7 @@ void IRVisitor::visit(NumberConstAST *ast) {
 }
 
 void IRVisitor::visit(BoolConstAST *ast) {
-	currentValue = llvm::ConstantInt::get(llvm::getGlobalContext(), llvm::APInt(8, ast->getValue()?1:0, true));
+	currentValue = llvm::ConstantInt::get(llvm::getGlobalContext(), llvm::APInt(1, ast->getValue()?1:0, true));
 }
 
 void IRVisitor::visit(BinaryExpressionAST *ast) {
@@ -100,7 +100,17 @@ void IRVisitor::visit(FunctionCallAST *ast) {
 
 void IRVisitor::visit(FunctionDefinitionAST *ast) {
 	std::vector<llvm::Type*> args;
-	llvm::FunctionType *funcType = llvm::FunctionType::get(llvm::Type::getDoubleTy(llvm::getGlobalContext()), args, false);
+	llvm::FunctionType *funcType;
+	if(ast->getType() == Type::BOOL) {
+		funcType = llvm::FunctionType::get(llvm::Type::getInt1Ty(llvm::getGlobalContext()), args, false);
+	} else if(ast->getType() == Type::NUMBER) {
+		funcType = llvm::FunctionType::get(llvm::Type::getDoubleTy(llvm::getGlobalContext()), args, false);
+	} else {
+		fprintf(stderr, "could not create function\n");
+		// error
+		return;
+	}
+
 	llvm::Function *func = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, ast->getName(), theModule.get());
 
 	if(!func) {
