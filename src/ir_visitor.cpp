@@ -5,6 +5,18 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/raw_os_ostream.h"
 
+llvm::Type *IRVisitor::typeConversion(Type type)const {
+	switch(type) {
+		case Type::BOOL:
+			return llvm::IntegerType::get(llvm::getGlobalContext(), 1);
+		case Type::NUMBER:
+			return llvm::Type::getDoubleTy(llvm::getGlobalContext());
+		default:
+			fprintf(stderr, "wrong operator\n");
+			return nullptr;
+	}
+}
+
 void IRVisitor::visit(NumberConstAST *ast) {
 	currentValue = llvm::ConstantFP::get(llvm::getGlobalContext(), llvm::APFloat(ast->getValue()));
 }
@@ -96,19 +108,24 @@ void IRVisitor::visit(FunctionCallAST *ast) {
 	 auto function = theModule->getFunction(ast->getName());
 	 if(!function) {
 		fprintf(stderr, "call to unknown function\n");
-	 	// error
-	 	// unknown function
 	 	return;
 	 }
-	 if(function->arg_size() != 0) {
-	 	return;
-	 }
+	 auto &arguments = ast->getArguments();
 	 std::vector<llvm::Value*> argValues;
+	 for(auto &arg : arguments) {
+	 	arg->accept(*this);
+	 	argValues.push_back(currentValue);
+	 }
 	 currentValue = builder.CreateCall(function, argValues, ast->getName());
 }
 
 void IRVisitor::visit(FunctionDefinitionAST *ast) {
+	environments.push(IRENV());
+	auto arguments = ast->getArguments();
 	std::vector<llvm::Type*> args;
+	for(auto &arg : arguments) {
+		args.push_back(typeConversion(arg.getType()));
+	}
 	llvm::FunctionType *funcType;
 	if(ast->getType() == Type::BOOL) {
 		funcType = llvm::FunctionType::get(llvm::Type::getInt1Ty(llvm::getGlobalContext()), args, false);
@@ -127,13 +144,27 @@ void IRVisitor::visit(FunctionDefinitionAST *ast) {
 		// error
 		return;
 	}
+
 	llvm::BasicBlock *block = llvm::BasicBlock::Create(llvm::getGlobalContext(), "entry", func);
 	builder.SetInsertPoint(block);
+
+	auto arg_ir = func->arg_begin();
+	auto arg_ir_end = func->arg_end();
+	auto arg = arguments.begin();
+	auto arg_end = arguments.end();
+	for(; arg_ir != arg_ir_end && arg != arg_end; arg_ir++, arg++) {
+		arg_ir->setName(arg->getName());
+		auto arg_alloc = builder.CreateAlloca(typeConversion(arg->getType()), 0, arg->getName());
+		builder.CreateStore(arg_ir, arg_alloc, false);
+		environments.top().add(arg->getName(), IRVAR(arg->getType(), arg->getName(), arg_alloc));
+	}
+
 	ast->getBody()->accept(*this);
 	if(currentValue) {
 		builder.CreateRet(currentValue);
 		llvm::verifyFunction(*func);
 		//func->dump();
+		environments.pop();
 		return;
 	}
 	fprintf(stderr, "could not create function body\n");
@@ -148,6 +179,15 @@ void IRVisitor::visit(UnaryOperatorAST *ast) {
 	currentValue = builder.CreateXor(currentValue, true_const, "xorBool");
 }
 
+void IRVisitor::visit(VariableAST *ast) {
+	auto name = ast->getName();
+	if(!environments.top().isDefined(name)) {
+		fprintf(stderr, "Variable(%s) not found\n", name.c_str());
+		return;
+	}
+	auto var = environments.top().getValue(name).getIRVariable();
+	currentValue = builder.CreateLoad(var, false, name);
+}
 
 void IRVisitor::print() {
 	if(currentValue) {

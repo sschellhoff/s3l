@@ -1,12 +1,13 @@
 #include "include/parser.h"
 #include "include/make_unique.h"
-#include "include/function_argument.h"
+#include "include/variable.h"
 #include "include/number_const_ast.h"
 #include "include/bool_const_ast.h"
 #include "include/function_call_ast.h"
 #include "include/binary_expression_ast.h"
 #include "include/function_call_ast.h"
 #include "include/unary_operator_ast.h"
+#include "include/variable_ast.h"
 
 #include <algorithm>
 #include <fstream>
@@ -143,7 +144,7 @@ bool Parser::removeDeclarationIfNeeded(const std::string &name, Type resultType,
 	return false;
 }
 
-std::vector<Type> Parser::argumentsToTypes(std::vector<FunctionArgument> &arguments)const {
+std::vector<Type> Parser::argumentsToTypes(std::vector<Variable> &arguments)const {
 	std::vector<Type> result(arguments.size());
 	for(auto &arg : arguments) {
 		result.push_back(arg.getType());
@@ -246,7 +247,13 @@ ASTPTR Parser::parseIdentifierExpression() {
 	std::string identifierName = lexer.getIdentifierString(currentToken.getValueIndex());
 	consumeToken();
 	if(currentToken.getTokenType() != TokenType::LPAR) {
-		return nullptr; // variable
+		if(!environments.top().isDefined(identifierName)) {
+			makeError("used of undeclared variable");
+			return nullptr;
+		}
+		auto var = environments.top().getValue(identifierName);
+		auto type = var.getType();
+		return std::make_unique<VariableAST>(identifierName, type);
 	}
 	consumeToken();
 
@@ -265,7 +272,7 @@ ASTPTR Parser::parseIdentifierExpression() {
 		return nullptr;
 	}
 	consumeToken();
-	return std::make_unique<FunctionCallAST>(identifierName);
+	return std::make_unique<FunctionCallAST>(identifierName, std::move(arguments));
 }
 
 ASTPTR Parser::parseExpression() {
@@ -318,12 +325,13 @@ ASTPTR Parser::parseBinaryExpressionRHS(int operatorPrecedence, ASTPTR lhs) {
 }
 
 bool Parser::parseFunctionDefinition() {
+	environments.push(ENV());
 	if(currentToken.getTokenType() != TokenType::IDENTIFIER) {
 		makeError("function name expected");
 		return false;
 	}
 	std::string functionName = lexer.getIdentifierString(currentToken.getValueIndex());
-	std::vector<FunctionArgument> arguments;
+	std::vector<Variable> arguments;
 	std::vector<Type> argumentTypes = argumentsToTypes(arguments);
 	consumeToken();
 	if(currentToken.getTokenType() != TokenType::LPAR) {
@@ -345,7 +353,12 @@ bool Parser::parseFunctionDefinition() {
 			makeError("unknown argument type");
 			return false;
 		}
-		arguments.push_back(FunctionArgument(argType, argName));
+		if(environments.top().isAlreadyDefined(argName)) {
+			makeError("argument name already in use");
+			return false;
+		}
+		environments.top().add(argName, Variable(argType, argName));
+		arguments.push_back(Variable(argType, argName));
 	}
 
 	if(currentToken.getTokenType() != TokenType::RPAR) {
@@ -381,17 +394,19 @@ bool Parser::parseFunctionDefinition() {
 			return false;
 		}
 		removeDeclarationIfNeeded(functionName, resultType, argumentTypes);
-		functionDefinitions.push_back(FunctionPrototype(functionName, resultType, std::move(arguments)));
+		functionDefinitions.push_back(FunctionPrototype(functionName, resultType, arguments));
 		if(body->getType() != resultType) {
 			makeError("result of function body and function prototype do not match");
 			return false;
 		}
-		functionASTs->push_back(std::make_unique<FunctionDefinitionAST>(functionName, resultType, std::move(body), std::move(arguments)));
+		functionASTs->push_back(std::make_unique<FunctionDefinitionAST>(functionName, resultType, std::move(body), arguments));
+		environments.pop();
 		return true;
 	} else if(currentToken.getTokenType() == TokenType::SEMICOLON) {
 		if(!isFunctionDefined(functionName, resultType, argumentTypes) && !isFunctionDeclared(functionName, resultType, argumentTypes)) {
 			functionDeclarations.push_back(FunctionPrototype(functionName, resultType, std::move(arguments)));
 		}
+		environments.pop();
 		return true;
 	} else {
 		makeError("missing ; in function declaration");

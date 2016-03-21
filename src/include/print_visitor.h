@@ -9,6 +9,7 @@
 #include "function_call_ast.h"
 #include "function_definition_ast.h"
 #include "unary_operator_ast.h"
+#include "variable_ast.h"
 
 const char* beautifyOperator(Operator op) {
 	switch(op) {
@@ -53,5 +54,9 @@ class PrintVisitor : public Visitor {
 	virtual void visit(UnaryOperatorAST *ast) {
 		std::cout << "unary operator" << std::endl;
 		ast->getInner()->accept(*this);
+	}
+
+	virtual void visit(VariableAST *ast) {
+		std::cout << "var: " << ast->getName() << std::endl;
 	}
 };

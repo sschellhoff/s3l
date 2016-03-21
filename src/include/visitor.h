@@ -6,6 +6,7 @@ class BinaryExpressionAST;
 class FunctionCallAST;
 class FunctionDefinitionAST;
 class UnaryOperatorAST;
+class VariableAST;
 
 class Visitor {
 public:
@@ -15,4 +16,5 @@ public:
 	virtual void visit(FunctionCallAST *ast)=0;
 	virtual void visit(FunctionDefinitionAST *ast)=0;
 	virtual void visit(UnaryOperatorAST *ast)=0;
+	virtual void visit(VariableAST *ast)=0;
 };

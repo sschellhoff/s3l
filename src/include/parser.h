@@ -15,7 +15,7 @@
 #include "ast.h"
 #include "function_definition_ast.h"
 
-using ENV = Environment<FunctionArgument>;
+using ENV = Environment<Variable>;
 using ENVSTACK = std::stack<ENV>;
 using ASTPTR = std::unique_ptr<AST>;
 using FUNCVECPTR = std::unique_ptr<std::vector<std::unique_ptr<FunctionDefinitionAST>>>;
@@ -41,7 +41,7 @@ private:
 	bool isFunctionDefined(const std::string &name, Type resultType, std::vector<Type> &types);
 	bool isFunctionDeclared(const std::string &name, Type resultType, std::vector<Type> &types);
 	bool removeDeclarationIfNeeded(const std::string &name, Type resultType, std::vector<Type> &types);
-	std::vector<Type> argumentsToTypes(std::vector<FunctionArgument> &arguments)const;
+	std::vector<Type> argumentsToTypes(std::vector<Variable> &arguments)const;
 	ASTPTR parsePrimeExpression();
 	ASTPTR parseNumberConst();
 	ASTPTR parseBoolConst();
