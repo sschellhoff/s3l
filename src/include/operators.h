@@ -17,5 +17,6 @@ enum class Operator {
 };
 
 enum class UnaryOperator {
+	NOT,
 	NEG
 };

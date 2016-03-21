@@ -1,11 +1,7 @@
-double(val number) number {
-	val * 2
+check(val number) number {
+	-val
 }
 
-add(a number, b number) number {
-	a + b
-}
-
-main() bool {
-	double(42) > 50 => add(13, 37) > 50
+jaja() number {
+	check(-1337)
 }

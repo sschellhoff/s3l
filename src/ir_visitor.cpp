@@ -173,10 +173,29 @@ void IRVisitor::visit(FunctionDefinitionAST *ast) {
 }
 
 void IRVisitor::visit(UnaryOperatorAST *ast) {
-	// a xor true == !a
-	auto true_const = llvm::ConstantInt::get(llvm::getGlobalContext(), llvm::APInt(1, 1));
-	ast->getInner()->accept(*this);
-	currentValue = builder.CreateXor(currentValue, true_const, "xorBool");
+	switch(ast->getOperator()) {
+		case UnaryOperator::NOT:
+		{
+			// a xor true == !a
+			auto true_const = llvm::ConstantInt::get(llvm::getGlobalContext(), llvm::APInt(1, 1));
+			ast->getInner()->accept(*this);
+			currentValue = builder.CreateXor(currentValue, true_const, "xorBool");
+			break;
+		}
+		case UnaryOperator::NEG:
+		{
+			// 0 - a == -a
+			auto zero_const = llvm::ConstantFP::get(llvm::getGlobalContext(), llvm::APFloat(0.0));
+			ast->getInner()->accept(*this);
+			currentValue = builder.CreateFSub(zero_const, currentValue, "subFloat");
+			break;
+		}
+		default:
+		{
+			fprintf(stderr, "unknown unary operator");
+			return;
+		}
+	}
 }
 
 void IRVisitor::visit(VariableAST *ast) {

@@ -78,8 +78,10 @@ Type Parser::determineOperatorResult(const Operator op, const Type t1, const Typ
 
 bool Parser::isValidOperator(const UnaryOperator op, const Type t1)const {
 	switch(op) {
-		case UnaryOperator::NEG:
+		case UnaryOperator::NOT:
 			return t1 == Type::BOOL;
+		case UnaryOperator::NEG:
+			return t1 == Type::NUMBER;
 		default:
 			return false;
 	}
@@ -207,6 +209,24 @@ ASTPTR Parser::parsePrimeExpression() {
 				return nullptr;
 			}
 			auto op = lexer.getUnaryOperator(unOp.getValueIndex());
+			if(!isValidOperator(op, inner->getType())) {
+				makeError("wrong inner type for unary expression");
+				return nullptr;
+			}
+			return std::make_unique<UnaryOperatorAST>(op, inner->getType(), std::move(inner));
+		}
+		case TokenType::OPERATOR:
+		{
+			if(lexer.getOperator(currentToken.getValueIndex()) != Operator::SUB) {
+				makeError("could not use binary operator as unary prefix operator");
+				return nullptr;
+			}
+			consumeToken();
+			auto inner = parsePrimeExpression();
+			if(!inner) {
+				return nullptr;
+			}
+			auto op = UnaryOperator::NEG;
 			if(!isValidOperator(op, inner->getType())) {
 				makeError("wrong inner type for unary expression");
 				return nullptr;

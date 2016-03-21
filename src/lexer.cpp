@@ -28,7 +28,7 @@ void Lexer::initOperators() {
 	operators.push_back(Operator::OR);
 	operators.push_back(Operator::IMPL);
 
-	unaryOperators.push_back(UnaryOperator::NEG);
+	unaryOperators.push_back(UnaryOperator::NOT);
 }
 
 void Lexer::setInput(const std::string &input) {
