@@ -5,6 +5,7 @@ class BoolConstAST;
 class BinaryExpressionAST;
 class FunctionCallAST;
 class FunctionDefinitionAST;
+class UnaryOperatorAST;
 
 class Visitor {
 public:
@@ -13,4 +14,5 @@ public:
 	virtual void visit(BinaryExpressionAST *ast)=0;
 	virtual void visit(FunctionCallAST *ast)=0;
 	virtual void visit(FunctionDefinitionAST *ast)=0;
+	virtual void visit(UnaryOperatorAST *ast)=0;
 };

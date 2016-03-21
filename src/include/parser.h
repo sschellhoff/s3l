@@ -5,7 +5,9 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <stack>
 
+#include "environment.h"
 #include "operators.h"
 #include "token.h"
 #include "lexer.h"
@@ -13,6 +15,8 @@
 #include "ast.h"
 #include "function_definition_ast.h"
 
+using ENV = Environment<FunctionArgument>;
+using ENVSTACK = std::stack<ENV>;
 using ASTPTR = std::unique_ptr<AST>;
 using FUNCVECPTR = std::unique_ptr<std::vector<std::unique_ptr<FunctionDefinitionAST>>>;
 
@@ -20,20 +24,24 @@ class Parser {
 private:
 	std::map<Operator, int> operatorPrecedences;
 	Token currentToken;
+	ENVSTACK environments;
 	Lexer lexer;
 	std::ostream &errorStream;
 	std::vector<FunctionPrototype> functionDefinitions;
 	std::vector<FunctionPrototype> functionDeclarations;
 	std::unique_ptr<std::vector<std::unique_ptr<FunctionDefinitionAST>>> functionASTs;
+	Type stringToType(const std::string &typeString)const;
 	bool isValidOperator(const Operator op, const Type t1, const Type t2)const;
 	Type determineOperatorResult(const Operator op, const Type t1, const Type t2)const;
+	bool isValidOperator(const UnaryOperator op, const Type t1)const;
 	void makeError(const std::string &msg);
 	void consumeToken();
 	bool isIdentifier(const std::string &name);
 	bool tryConsumeIdentifier(const std::string &name);
-	bool isFunctionDefined(const std::string &name, Type resultType);
-	bool isFunctionDeclared(const std::string &name, Type resultType);
-	bool removeDeclarationIfNeeded(const std::string &name, Type resultType);
+	bool isFunctionDefined(const std::string &name, Type resultType, std::vector<Type> &types);
+	bool isFunctionDeclared(const std::string &name, Type resultType, std::vector<Type> &types);
+	bool removeDeclarationIfNeeded(const std::string &name, Type resultType, std::vector<Type> &types);
+	std::vector<Type> argumentsToTypes(std::vector<FunctionArgument> &arguments)const;
 	ASTPTR parsePrimeExpression();
 	ASTPTR parseNumberConst();
 	ASTPTR parseBoolConst();

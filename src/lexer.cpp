@@ -26,6 +26,9 @@ void Lexer::initOperators() {
 	operators.push_back(Operator::NE);
 	operators.push_back(Operator::AND);
 	operators.push_back(Operator::OR);
+	operators.push_back(Operator::IMPL);
+
+	unaryOperators.push_back(UnaryOperator::NEG);
 }
 
 void Lexer::setInput(const std::string &input) {
@@ -129,6 +132,9 @@ Token Lexer::getNext() {
 					if(inputLeft() && input[currentPos] == '=') {
 						currentPos++;
 						return Token(TokenType::OPERATOR, 8);
+					} else if( inputLeft() && input[currentPos] == '>') {
+						currentPos++;
+						return Token(TokenType::OPERATOR, 12);
 					}
 					return Token(TokenType::ERROR);
 				case '!':
@@ -137,7 +143,7 @@ Token Lexer::getNext() {
 						currentPos++;
 						return Token(TokenType::OPERATOR, 9);
 					}
-					return Token(TokenType::ERROR);
+					return Token(TokenType::UNARYOPERATOR, 0);
 				case '&':
 					currentPos++;
 					if(inputLeft() && input[currentPos] == '&') {
@@ -185,4 +191,8 @@ double Lexer::getDoubleConstant(int index) const {
 
 Operator Lexer::getOperator(int index) const {
 	return operators[index];
+}
+
+UnaryOperator Lexer::getUnaryOperator(int index) const {
+	return unaryOperators[index];
 }

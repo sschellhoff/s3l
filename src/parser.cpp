@@ -1,10 +1,12 @@
 #include "include/parser.h"
 #include "include/make_unique.h"
+#include "include/function_argument.h"
 #include "include/number_const_ast.h"
 #include "include/bool_const_ast.h"
 #include "include/function_call_ast.h"
 #include "include/binary_expression_ast.h"
 #include "include/function_call_ast.h"
+#include "include/unary_operator_ast.h"
 
 #include <algorithm>
 #include <fstream>
@@ -44,6 +46,7 @@ bool Parser::isValidOperator(const Operator op, const Type t1, const Type t2)con
 			return t1 == Type::NUMBER;
 		case Operator::AND:
 		case Operator::OR:
+		case Operator::IMPL:
 			return t1 == Type::BOOL;
 		default:
 			return false;
@@ -60,6 +63,7 @@ Type Parser::determineOperatorResult(const Operator op, const Type t1, const Typ
 		case Operator::GE:
 		case Operator::AND:
 		case Operator::OR:
+		case Operator::IMPL:
 			return Type::BOOL;
 		case Operator::ADD:
 		case Operator::SUB:
@@ -68,6 +72,15 @@ Type Parser::determineOperatorResult(const Operator op, const Type t1, const Typ
 			return t1;
 		default:
 			return Type::VOID;
+	}
+}
+
+bool Parser::isValidOperator(const UnaryOperator op, const Type t1)const {
+	switch(op) {
+		case UnaryOperator::NEG:
+			return t1 == Type::BOOL;
+		default:
+			return false;
 	}
 }
 
@@ -91,33 +104,51 @@ bool Parser::tryConsumeIdentifier(const std::string &name) {
 	return false;
 }
 
-bool Parser::isFunctionDefined(const std::string &name, Type resultType) {
+Type Parser::stringToType(const std::string &typeString)const {
+	if(typeString == "bool") {
+		return Type::BOOL;
+	} else if(typeString == "number") {
+		return Type::NUMBER;
+	} else {
+		return Type::VOID;
+	}
+}
+
+bool Parser::isFunctionDefined(const std::string &name, Type resultType, std::vector<Type> &types) {
 	for(auto &funcDef : functionDefinitions) {
-		if(funcDef.getName() == name && funcDef.getResultType() == resultType) {
+		if(funcDef.equals(name, resultType, types)/*funcDef.getName() == name && funcDef.getResultType() == resultType*/) {
 			return true;
 		}
 	}
 	return false;
 }
 
-bool Parser::isFunctionDeclared(const std::string &name, Type resultType) {
+bool Parser::isFunctionDeclared(const std::string &name, Type resultType, std::vector<Type> &types) {
 	for(auto &funcDef : functionDeclarations) {
-		if(funcDef.getName() == name && funcDef.getResultType() == resultType) {
+		if(funcDef.equals(name, resultType, types)/*funcDef.getName() == name && funcDef.getResultType() == resultType*/) {
 			return true;
 		}
 	}
 	return false;
 }
 
-bool Parser::removeDeclarationIfNeeded(const std::string &name, Type resultType) {
+bool Parser::removeDeclarationIfNeeded(const std::string &name, Type resultType, std::vector<Type> &types) {
 	for(auto it = functionDeclarations.begin(); it != functionDeclarations.end(); it++) {
-		if(it->getName() == name && it->getResultType() == resultType) {
+		if(it->equals(name, resultType, types)/*it->getName() == name && it->getResultType() == resultType*/) {
 			std::swap(*it, functionDeclarations.back());
 			functionDeclarations.pop_back();
 			return true;
 		}
 	}
 	return false;
+}
+
+std::vector<Type> Parser::argumentsToTypes(std::vector<FunctionArgument> &arguments)const {
+	std::vector<Type> result(arguments.size());
+	for(auto &arg : arguments) {
+		result.push_back(arg.getType());
+	}
+	return result;
 }
 
 FUNCVECPTR Parser::parse(const std::string &program) {
@@ -166,6 +197,21 @@ ASTPTR Parser::parsePrimeExpression() {
 		}
 		case TokenType::IDENTIFIER:
 			return parseIdentifierExpression();
+		case TokenType::UNARYOPERATOR:
+		{
+			auto unOp = currentToken;
+			consumeToken();
+			auto inner = parsePrimeExpression();
+			if(!inner) {
+				return nullptr;
+			}
+			auto op = lexer.getUnaryOperator(unOp.getValueIndex());
+			if(!isValidOperator(op, inner->getType())) {
+				makeError("wrong inner type for unary expression");
+				return nullptr;
+			}
+			return std::make_unique<UnaryOperatorAST>(op, inner->getType(), std::move(inner));
+		}
 		default:
 			makeError("primary expression expected");
 			return nullptr;
@@ -203,6 +249,17 @@ ASTPTR Parser::parseIdentifierExpression() {
 		return nullptr; // variable
 	}
 	consumeToken();
+
+	std::vector<ASTPTR> arguments;
+	while(currentToken.getTokenType() != TokenType::RPAR) {
+		auto arg = parseExpression();
+		if(!arg) {
+			makeError("error parsing arguments in function call");
+			return nullptr;
+		}
+		arguments.push_back(std::move(arg));
+	}
+
 	if(currentToken.getTokenType() != TokenType::RPAR) {
 		makeError("missing )");
 		return nullptr;
@@ -266,27 +323,43 @@ bool Parser::parseFunctionDefinition() {
 		return false;
 	}
 	std::string functionName = lexer.getIdentifierString(currentToken.getValueIndex());
+	std::vector<FunctionArgument> arguments;
+	std::vector<Type> argumentTypes = argumentsToTypes(arguments);
 	consumeToken();
 	if(currentToken.getTokenType() != TokenType::LPAR) {
 		makeError("missing (");
 		return false;
 	}
 	consumeToken();
+
+	while(currentToken.getTokenType() == TokenType::IDENTIFIER) {
+		std::string argName = lexer.getIdentifierString(currentToken.getValueIndex());
+		consumeToken();
+		if(currentToken.getTokenType() != TokenType::IDENTIFIER) {
+			makeError("missing arguments type");
+			return false;
+		}
+		Type argType = stringToType(lexer.getIdentifierString(currentToken.getValueIndex()));
+		consumeToken();
+		if(argType == Type::VOID) {
+			makeError("unknown argument type");
+			return false;
+		}
+		arguments.push_back(FunctionArgument(argType, argName));
+	}
+
 	if(currentToken.getTokenType() != TokenType::RPAR) {
 		makeError("missing )");
 		return false;
 	}
 	consumeToken();
 	Type resultType = Type::VOID;
+
 	if(currentToken.getTokenType() == TokenType::IDENTIFIER) {
 		auto typeString = lexer.getIdentifierString(currentToken.getValueIndex());
 		consumeToken();
-
-		if(typeString == "bool") {
-			resultType = Type::BOOL;
-		} else if(typeString == "number") {
-			resultType = Type::NUMBER;
-		} else {
+		resultType = stringToType(typeString);
+		if(resultType == Type::VOID) {
 			makeError("unknown function result type");
 			return false;
 		}
@@ -303,21 +376,21 @@ bool Parser::parseFunctionDefinition() {
 			return false;
 		}
 		consumeToken();
-		if(isFunctionDefined(functionName, resultType)) {
+		if(isFunctionDefined(functionName, resultType, argumentTypes)) {
 			makeError("doubled function definition");
 			return false;
 		}
-		removeDeclarationIfNeeded(functionName, resultType);
-		functionDefinitions.push_back(FunctionPrototype(functionName, resultType));
+		removeDeclarationIfNeeded(functionName, resultType, argumentTypes);
+		functionDefinitions.push_back(FunctionPrototype(functionName, resultType, std::move(arguments)));
 		if(body->getType() != resultType) {
 			makeError("result of function body and function prototype do not match");
 			return false;
 		}
-		functionASTs->push_back(std::make_unique<FunctionDefinitionAST>(functionName, resultType, std::move(body)));
+		functionASTs->push_back(std::make_unique<FunctionDefinitionAST>(functionName, resultType, std::move(body), std::move(arguments)));
 		return true;
 	} else if(currentToken.getTokenType() == TokenType::SEMICOLON) {
-		if(!isFunctionDefined(functionName, resultType) && !isFunctionDeclared(functionName, resultType)) {
-			functionDeclarations.push_back(FunctionPrototype(functionName, resultType));
+		if(!isFunctionDefined(functionName, resultType, argumentTypes) && !isFunctionDeclared(functionName, resultType, argumentTypes)) {
+			functionDeclarations.push_back(FunctionPrototype(functionName, resultType, std::move(arguments)));
 		}
 		return true;
 	} else {

@@ -1,7 +1,7 @@
-check() number {
+check(a number b bool c bool d number) number {
 	42
 }
 
-main() bool {
-	1337 == check()
+main(grr bool gru number) bool {
+	!true
 }

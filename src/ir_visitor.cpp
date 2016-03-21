@@ -72,7 +72,16 @@ void IRVisitor::visit(BinaryExpressionAST *ast) {
 			currentValue = builder.CreateOr(lhs, rhs, "orBool");
 			break;
 			case Operator::ADD:
-			currentValue = builder.CreateXor(lhs, rhs, "xorFloat");
+			currentValue = builder.CreateXor(lhs, rhs, "xorBool");
+			break;
+			case Operator::IMPL:
+			{
+				// lhs xor true == !lhs
+				auto true_const = llvm::ConstantInt::get(llvm::getGlobalContext(), llvm::APInt(1, 1));
+				lhs = builder.CreateXor(lhs, true_const, "xorBool");
+				// !lhs or rhs == lhs => rhs
+				currentValue = builder.CreateOr(lhs, rhs, "orBool");
+			}
 			break;
 			default:
 			fprintf(stderr, "wrong operator\n");
@@ -131,6 +140,14 @@ void IRVisitor::visit(FunctionDefinitionAST *ast) {
 	// error
 	func->eraseFromParent();
 }
+
+void IRVisitor::visit(UnaryOperatorAST *ast) {
+	// a xor true == !a
+	auto true_const = llvm::ConstantInt::get(llvm::getGlobalContext(), llvm::APInt(1, 1));
+	ast->getInner()->accept(*this);
+	currentValue = builder.CreateXor(currentValue, true_const, "xorBool");
+}
+
 
 void IRVisitor::print() {
 	if(currentValue) {

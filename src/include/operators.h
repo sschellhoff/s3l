@@ -12,5 +12,10 @@ enum class Operator {
 	EQ,
 	NE,
 	AND,
-	OR
+	OR,
+	IMPL
+};
+
+enum class UnaryOperator {
+	NEG
 };

@@ -12,6 +12,7 @@
 #include "binary_expression_ast.h"
 #include "function_call_ast.h"
 #include "function_definition_ast.h"
+#include "unary_operator_ast.h"
 #include "make_unique.h"
 
 class IRVisitor : public Visitor {
@@ -26,6 +27,8 @@ public:
 	virtual void visit(BinaryExpressionAST *ast);
 	virtual void visit(FunctionCallAST *ast);
 	virtual void visit(FunctionDefinitionAST *ast);
+	virtual void visit(UnaryOperatorAST *ast);
+
 	void print();
 	void printModule();
 	void writeModule(std::ostream &outStream);

@@ -8,6 +8,7 @@
 #include "binary_expression_ast.h"
 #include "function_call_ast.h"
 #include "function_definition_ast.h"
+#include "unary_operator_ast.h"
 
 const char* beautifyOperator(Operator op) {
 	switch(op) {
@@ -47,5 +48,10 @@ class PrintVisitor : public Visitor {
 		std::cout << ast->getName() << "() {" << std::endl;
 		ast->getBody()->accept(*this);
 		std::cout << "}" << std::endl << std::endl;
+	}
+
+	virtual void visit(UnaryOperatorAST *ast) {
+		std::cout << "unary operator" << std::endl;
+		ast->getInner()->accept(*this);
 	}
 };

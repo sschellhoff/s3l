@@ -3,10 +3,13 @@
 #include "ast.h"
 
 #include <string>
+#include <vector>
+#include <memory>
 
 class FunctionCallAST : public AST {
 private:
 std::string name;
+std::vector<std::unique_ptr<AST> > argumentValues;
 public:
 	FunctionCallAST(const std::string &name);
 	const std::string &getName()const;

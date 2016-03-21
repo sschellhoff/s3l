@@ -11,7 +11,8 @@ enum class TokenType {
 	RPAR,
 	LBLOCK,
 	RBLOCK,
-	SEMICOLON
+	SEMICOLON,
+	UNARYOPERATOR
 };
 
 class Token {

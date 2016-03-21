@@ -1,6 +1,6 @@
 #include "include/function_definition_ast.h"
 
-FunctionDefinitionAST::FunctionDefinitionAST(const std::string &name, Type resultType, std::unique_ptr<AST> body):AST(resultType), name(name), body(std::move(body)) {
+FunctionDefinitionAST::FunctionDefinitionAST(const std::string &name, Type resultType, std::unique_ptr<AST> body, std::vector<FunctionArgument> &&arguments):AST(resultType), name(name), body(std::move(body)), arguments(std::move(arguments)) {
 }
 
 const std::string &FunctionDefinitionAST::getName()const {
