@@ -1,7 +1,11 @@
-double(a number) number {
-	a * 2
+double(val number) number {
+	val * 2
+}
+
+add(a number, b number) number {
+	a + b
 }
 
 main() bool {
-	double(42) == 84
+	double(42) > 50 => add(13, 37) > 50
 }

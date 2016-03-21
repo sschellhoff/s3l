@@ -265,6 +265,14 @@ ASTPTR Parser::parseIdentifierExpression() {
 			return nullptr;
 		}
 		arguments.push_back(std::move(arg));
+		if(currentToken.getTokenType() != TokenType::RPAR) {
+			if(currentToken.getTokenType() == TokenType::SEPARATOR) {
+				consumeToken();
+			} else {
+				makeError("error parsing arguments in function call");
+				return nullptr;
+			}
+		}
 	}
 
 	if(currentToken.getTokenType() != TokenType::RPAR) {
@@ -359,6 +367,14 @@ bool Parser::parseFunctionDefinition() {
 		}
 		environments.top().add(argName, Variable(argType, argName));
 		arguments.push_back(Variable(argType, argName));
+		if(currentToken.getTokenType() != TokenType::SEPARATOR) {
+			if(currentToken.getTokenType() != TokenType::RPAR) {
+				makeError("error in function definition - parameter list");
+				return nullptr;
+			}
+			break;
+		}
+		consumeToken();
 	}
 
 	if(currentToken.getTokenType() != TokenType::RPAR) {

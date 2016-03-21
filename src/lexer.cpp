@@ -161,6 +161,9 @@ Token Lexer::getNext() {
 				case ';':
 					currentPos++;
 					return Token(TokenType::SEMICOLON, 0);
+				case ',':
+					currentPos++;
+					return Token(TokenType::SEPARATOR, 0);
 				default:
 				break;
 			}
