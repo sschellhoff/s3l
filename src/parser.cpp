@@ -116,7 +116,7 @@ Type Parser::stringToType(const std::string &typeString)const {
 
 bool Parser::isFunctionDefined(const std::string &name, Type resultType, std::vector<Type> &types) {
 	for(auto &funcDef : functionDefinitions) {
-		if(funcDef.equals(name, resultType, types)/*funcDef.getName() == name && funcDef.getResultType() == resultType*/) {
+		if(funcDef.equals(name, resultType, types)) {
 			return true;
 		}
 	}
@@ -125,7 +125,7 @@ bool Parser::isFunctionDefined(const std::string &name, Type resultType, std::ve
 
 bool Parser::isFunctionDeclared(const std::string &name, Type resultType, std::vector<Type> &types) {
 	for(auto &funcDef : functionDeclarations) {
-		if(funcDef.equals(name, resultType, types)/*funcDef.getName() == name && funcDef.getResultType() == resultType*/) {
+		if(funcDef.equals(name, resultType, types)) {
 			return true;
 		}
 	}
@@ -134,7 +134,7 @@ bool Parser::isFunctionDeclared(const std::string &name, Type resultType, std::v
 
 bool Parser::removeDeclarationIfNeeded(const std::string &name, Type resultType, std::vector<Type> &types) {
 	for(auto it = functionDeclarations.begin(); it != functionDeclarations.end(); it++) {
-		if(it->equals(name, resultType, types)/*it->getName() == name && it->getResultType() == resultType*/) {
+		if(it->equals(name, resultType, types)) {
 			std::swap(*it, functionDeclarations.back());
 			functionDeclarations.pop_back();
 			return true;
