@@ -8,11 +8,13 @@
 #include "include/function_call_ast.h"
 #include "include/unary_operator_ast.h"
 #include "include/variable_ast.h"
+#include "include/return_ast.h"
+#include "include/block_ast.h"
 
 #include <algorithm>
 #include <fstream>
 
-Parser::Parser(std::ostream &errorStream):currentToken(TokenType::ERROR), errorStream(errorStream), functionASTs(std::make_unique<std::vector<std::unique_ptr<FunctionDefinitionAST>>>()) {
+Parser::Parser(std::ostream &errorStream):currentToken(TokenType::ERROR), currentFunctionsResultType(Type::VOID), errorStream(errorStream), functionASTs(std::make_unique<std::vector<std::unique_ptr<FunctionDefinitionAST>>>()) {
 	operatorPrecedences[Operator::OR] = 30;
 	operatorPrecedences[Operator::AND] = 40;
 	operatorPrecedences[Operator::EQ] = 50;
@@ -413,18 +415,12 @@ bool Parser::parseFunctionDefinition() {
 			return false;
 		}
 	}
+	currentFunctionsResultType = resultType;
 	if(currentToken.getTokenType() == TokenType::LBLOCK) {
-		consumeToken();
-		auto body = parseExpression();
+		auto body = parseBlock();
 		if(!body) {
-			makeError("function body expected");
 			return false;
 		}
-		if(currentToken.getTokenType() != TokenType::RBLOCK) {
-			makeError("missing }");
-			return false;
-		}
-		consumeToken();
 		if(isFunctionDefined(functionName, resultType, argumentTypes)) {
 			makeError("doubled function definition");
 			return false;
@@ -448,4 +444,68 @@ bool Parser::parseFunctionDefinition() {
 		makeError("missing ; in function declaration");
 		return false;
 	}
+}
+
+ASTPTR Parser::parseReturn() {
+	if(currentToken.getTokenType() != TokenType::RETURN) {
+		makeError("return statement expected");
+		return nullptr;
+	}
+	consumeToken();
+	if(currentToken.getTokenType() == TokenType::SEMICOLON) {
+		consumeToken();
+		return std::make_unique<ReturnAST>();
+	}
+	auto result = parseExpression();
+
+	if(!result) {
+		return nullptr;
+	}
+	if(result->getType() != currentFunctionsResultType) {
+		makeError("return statement does not match functions result type");
+		return nullptr;
+	}
+	return std::make_unique<ReturnAST>(std::move(result));
+}
+
+ASTPTR Parser::parseBlock() {
+	if(currentToken.getTokenType() != TokenType::LBLOCK) {
+		makeError("missing {");
+		return nullptr;
+	}
+	consumeToken();
+	std::vector<ASTPTR> statements;
+	bool block_has_return = currentFunctionsResultType == Type::VOID ? true : false;
+	while(currentToken.getTokenType() != TokenType::EOI && currentToken.getTokenType() != TokenType::RBLOCK) {
+		ASTPTR result;
+		switch(currentToken.getTokenType()) {
+			case TokenType::RETURN:
+			{
+				result = parseReturn();
+			}
+			break;
+			default:
+			{
+				makeError("unknown statement");
+				return nullptr;
+			}
+		}
+		if(!result) {
+			return nullptr;
+		}
+		if(result->getType() == currentFunctionsResultType) {
+			block_has_return = true;
+		}
+		statements.push_back(std::move(result));
+	}
+	if(currentToken.getTokenType() != TokenType::RBLOCK) {
+		makeError("missing }");
+		return nullptr;
+	}
+	consumeToken();
+	if(!block_has_return) {
+		makeError("missing return statement in function");
+		return nullptr;
+	}
+	return std::make_unique<BlockAST>(currentFunctionsResultType, std::move(statements));
 }

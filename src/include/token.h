@@ -13,7 +13,8 @@ enum class TokenType {
 	RBLOCK,
 	SEMICOLON,
 	UNARYOPERATOR,
-	SEPARATOR
+	SEPARATOR,
+	RETURN
 };
 
 class Token {

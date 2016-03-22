@@ -9,6 +9,10 @@
 #include "llvm/IR/LLVMContext.h"
 
 #include "visitor.h"
+#include "make_unique.h"
+#include "environment.h"
+#include "ir_variable.h"
+
 #include "number_const_ast.h"
 #include "bool_const_ast.h"
 #include "binary_expression_ast.h"
@@ -16,9 +20,8 @@
 #include "function_definition_ast.h"
 #include "unary_operator_ast.h"
 #include "variable_ast.h"
-#include "make_unique.h"
-#include "environment.h"
-#include "ir_variable.h"
+#include "return_ast.h"
+#include "block_ast.h"
 
 using IRVAR = IRVariable<llvm::Value>;
 using IRENV = Environment<IRVAR>;
@@ -40,6 +43,8 @@ public:
 	virtual void visit(FunctionDefinitionAST *ast);
 	virtual void visit(UnaryOperatorAST *ast);
 	virtual void visit(VariableAST *ast);
+	virtual void visit(ReturnAST *ast);
+	virtual void visit(BlockAST *ast);
 
 	void print();
 	void printModule();

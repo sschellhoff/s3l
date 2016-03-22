@@ -131,6 +131,8 @@ void IRVisitor::visit(FunctionDefinitionAST *ast) {
 		funcType = llvm::FunctionType::get(llvm::Type::getInt1Ty(llvm::getGlobalContext()), args, false);
 	} else if(ast->getType() == Type::NUMBER) {
 		funcType = llvm::FunctionType::get(llvm::Type::getDoubleTy(llvm::getGlobalContext()), args, false);
+	} else if(ast->getType() == Type::VOID) {
+		funcType = llvm::FunctionType::get(llvm::Type::getVoidTy(llvm::getGlobalContext()), args, false);
 	} else {
 		fprintf(stderr, "could not create function\n");
 		// error
@@ -161,7 +163,7 @@ void IRVisitor::visit(FunctionDefinitionAST *ast) {
 
 	ast->getBody()->accept(*this);
 	if(currentValue) {
-		builder.CreateRet(currentValue);
+		//builder.CreateRet(currentValue);
 		llvm::verifyFunction(*func);
 		//func->dump();
 		environments.pop();
@@ -206,6 +208,24 @@ void IRVisitor::visit(VariableAST *ast) {
 	}
 	auto var = environments.top().getValue(name).getIRVariable();
 	currentValue = builder.CreateLoad(var, false, name);
+}
+
+void IRVisitor::visit(ReturnAST *ast) {
+	if(ast->getType() != Type::VOID) {
+		ast->getResult()->accept(*this);
+		if(currentValue) {
+			builder.CreateRet(currentValue);
+		}
+	} else {
+		builder.CreateRet(nullptr);		
+	}
+}
+
+void IRVisitor::visit(BlockAST *ast) {
+	auto &statements = ast->getStatements();
+	for(auto &statement : statements) {
+		statement->accept(*this);
+	}
 }
 
 void IRVisitor::print() {

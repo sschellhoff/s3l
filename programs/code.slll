@@ -1,7 +1,14 @@
 check(val number) number {
-	-val
+	return -val
 }
 
 jaja() number {
-	check(-1337)
+	return check(-1337)
+}
+
+feelinGood() number {
+	return 1337
+}
+
+furz() {
 }

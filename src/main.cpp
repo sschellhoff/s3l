@@ -4,7 +4,6 @@
 #include "include/token.h"
 #include "include/lexer.h"
 #include "include/parser.h"
-#include "include/print_visitor.h"
 #include "include/ir_visitor.h"
 
 int main(int argc, char *argv[]) {

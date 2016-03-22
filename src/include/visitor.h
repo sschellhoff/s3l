@@ -7,6 +7,8 @@ class FunctionCallAST;
 class FunctionDefinitionAST;
 class UnaryOperatorAST;
 class VariableAST;
+class ReturnAST;
+class BlockAST;
 
 class Visitor {
 public:
@@ -17,4 +19,6 @@ public:
 	virtual void visit(FunctionDefinitionAST *ast)=0;
 	virtual void visit(UnaryOperatorAST *ast)=0;
 	virtual void visit(VariableAST *ast)=0;
+	virtual void visit(ReturnAST *ast)=0;
+	virtual void visit(BlockAST *ast)=0;
 };

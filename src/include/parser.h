@@ -25,6 +25,7 @@ private:
 	std::map<Operator, int> operatorPrecedences;
 	Token currentToken;
 	ENVSTACK environments;
+	Type currentFunctionsResultType;
 	Lexer lexer;
 	std::ostream &errorStream;
 	std::vector<FunctionPrototype> functionDefinitions;
@@ -48,6 +49,8 @@ private:
 	ASTPTR parseIdentifierExpression();
 	ASTPTR parseExpression();
 	ASTPTR parseBinaryExpressionRHS(int operatorPrecedence, ASTPTR lhs);
+	ASTPTR parseReturn();
+	ASTPTR parseBlock();
 	bool parseFunctionDefinition();
 public:
 	Parser(std::ostream &errorStream);
