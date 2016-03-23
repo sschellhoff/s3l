@@ -1,14 +1,13 @@
 #include <iostream>
 #include <fstream>
 
-#include "include/token.h"
 #include "include/lexer.h"
 #include "include/parser.h"
 #include "include/ir_visitor.h"
 
 int main(int argc, char *argv[]) {
 	Parser parser(std::cerr);
-	auto result = (argc == 1 ? parser.parse("acab() aabb() { true * 3 + 1337 } acab() { 42 / 2 }") : parser.parseFile(argv[1]));
+	auto result = (argc == 1 ? parser.parse("test(a bool) bool { return a => false }") : parser.parseFile(argv[1]));
 	if(nullptr != result) {
 		std::cout << "parsing complete" << std::endl;
 

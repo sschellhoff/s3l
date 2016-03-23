@@ -383,7 +383,7 @@ bool Parser::parseFunctionDefinition() {
 			makeError("unknown argument type");
 			return false;
 		}
-		if(environments.top().isAlreadyDefined(argName)) {
+		if(environments.top().isDefined(argName)) {
 			makeError("argument name already in use");
 			return false;
 		}
@@ -469,6 +469,7 @@ ASTPTR Parser::parseReturn() {
 }
 
 ASTPTR Parser::parseBlock() {
+	environments.push(ENV(&environments.top()));
 	if(currentToken.getTokenType() != TokenType::LBLOCK) {
 		makeError("missing {");
 		return nullptr;
@@ -482,6 +483,11 @@ ASTPTR Parser::parseBlock() {
 			case TokenType::RETURN:
 			{
 				result = parseReturn();
+			}
+			break;
+			case TokenType::LBLOCK:
+			{
+				result = parseBlock();
 			}
 			break;
 			default:
@@ -507,5 +513,6 @@ ASTPTR Parser::parseBlock() {
 		makeError("missing return statement in function");
 		return nullptr;
 	}
+	environments.pop();
 	return std::make_unique<BlockAST>(currentFunctionsResultType, std::move(statements));
 }

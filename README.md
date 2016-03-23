@@ -1,1 +1,0 @@
-This is a simple low level language implemented in c++ using llvm.

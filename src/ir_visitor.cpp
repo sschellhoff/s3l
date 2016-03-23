@@ -1,7 +1,5 @@
 #include "include/ir_visitor.h"
 
-#include "llvm/ADT/APFloat.h"
-#include "llvm/ADT/APInt.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/raw_os_ostream.h"
 
@@ -172,6 +170,7 @@ void IRVisitor::visit(FunctionDefinitionAST *ast) {
 	fprintf(stderr, "could not create function body\n");
 	// error
 	func->eraseFromParent();
+	environments.pop();
 }
 
 void IRVisitor::visit(UnaryOperatorAST *ast) {
@@ -222,10 +221,13 @@ void IRVisitor::visit(ReturnAST *ast) {
 }
 
 void IRVisitor::visit(BlockAST *ast) {
+
+	environments.push(IRENV(&environments.top()));
 	auto &statements = ast->getStatements();
 	for(auto &statement : statements) {
 		statement->accept(*this);
 	}
+	environments.pop();
 }
 
 void IRVisitor::print() {
