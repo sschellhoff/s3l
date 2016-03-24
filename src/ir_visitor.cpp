@@ -230,6 +230,14 @@ void IRVisitor::visit(BlockAST *ast) {
 	environments.pop();
 }
 
+void IRVisitor::visit(DeclVarAST *ast) {
+	auto var = ast->getVariable();
+	auto type = var.getType();
+	auto name = var.getName();
+	auto arg_alloc = builder.CreateAlloca(typeConversion(type), 0, name);
+	environments.top().add(name, IRVAR(type, name, arg_alloc));
+}
+
 void IRVisitor::print() {
 	if(currentValue) {
 		currentValue->dump();

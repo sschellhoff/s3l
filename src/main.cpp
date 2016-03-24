@@ -7,7 +7,7 @@
 
 int main(int argc, char *argv[]) {
 	Parser parser(std::cerr);
-	auto result = (argc == 1 ? parser.parse("test(a bool) bool { return a => false }") : parser.parseFile(argv[1]));
+	auto result = (argc == 1 ? parser.parse("test(a bool) bool { test bool return a => test }") : parser.parseFile(argv[1]));
 	if(nullptr != result) {
 		std::cout << "parsing complete" << std::endl;
 

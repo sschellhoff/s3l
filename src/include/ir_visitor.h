@@ -22,6 +22,7 @@
 #include "variable_ast.h"
 #include "return_ast.h"
 #include "block_ast.h"
+#include "decl_var_ast.h"
 
 using IRVAR = IRVariable<llvm::Value>;
 using IRENV = Environment<IRVAR>;
@@ -45,6 +46,7 @@ public:
 	virtual void visit(VariableAST *ast);
 	virtual void visit(ReturnAST *ast);
 	virtual void visit(BlockAST *ast);
+	virtual void visit(DeclVarAST *ast);
 
 	void print();
 	void printModule();

@@ -10,6 +10,7 @@
 #include "include/variable_ast.h"
 #include "include/return_ast.h"
 #include "include/block_ast.h"
+#include "include/decl_var_ast.h"
 
 #include <algorithm>
 #include <fstream>
@@ -490,6 +491,11 @@ ASTPTR Parser::parseBlock() {
 				result = parseBlock();
 			}
 			break;
+			case TokenType::IDENTIFIER:
+			{
+				result = parseDeclVar();
+			}
+			break;
 			default:
 			{
 				makeError("unknown statement");
@@ -515,4 +521,26 @@ ASTPTR Parser::parseBlock() {
 	}
 	environments.pop();
 	return std::make_unique<BlockAST>(currentFunctionsResultType, std::move(statements));
+}
+
+ASTPTR Parser::parseDeclVar() {
+	if(currentToken.getTokenType() != TokenType::IDENTIFIER) {
+		makeError("variable declaration expected");
+		return nullptr;
+	}
+	auto name = lexer.getIdentifierString(currentToken.getValueIndex());
+	consumeToken();
+	if(currentToken.getTokenType() != TokenType::IDENTIFIER) {
+		makeError("variable type expected");
+		return nullptr;
+	}
+	auto type = stringToType(lexer.getIdentifierString(currentToken.getValueIndex()));
+	if(type == Type::VOID) {
+		makeError("invalid variable type");
+		return nullptr;
+	}
+	consumeToken();
+	Variable var(type, name);
+	environments.top().add(name,var);
+	return std::make_unique<DeclVarAST>(var);
 }
