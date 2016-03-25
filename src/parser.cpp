@@ -112,6 +112,10 @@ bool Parser::tryConsumeIdentifier(const std::string &name) {
 	return false;
 }
 
+bool Parser::isFunctionCallable(const std::string &name, std::vector<Type> argTypes)const {
+	return false;
+}
+
 Type Parser::stringToType(const std::string &typeString)const {
 	if(typeString == "bool") {
 		return Type::BOOL;

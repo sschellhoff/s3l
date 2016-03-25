@@ -1,14 +1,11 @@
-check(val number) number {
-	return -val
+jaja() {
+	return;
 }
 
-jaja() number {
-	return check(-1337)
+hii() bool {
+	return true
 }
 
-feelinGood() number {
-	return 1337
-}
-
-furz() {
+check() number {
+return 1337
 }

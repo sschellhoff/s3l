@@ -39,6 +39,7 @@ private:
 	void consumeToken();
 	bool isIdentifier(const std::string &name);
 	bool tryConsumeIdentifier(const std::string &name);
+	bool isFunctionCallable(const std::string &name, std::vector<Type> argTypes)const;
 	bool isFunctionDefined(const std::string &name, Type resultType, std::vector<Type> &types);
 	bool isFunctionDeclared(const std::string &name, Type resultType, std::vector<Type> &types);
 	bool removeDeclarationIfNeeded(const std::string &name, Type resultType, std::vector<Type> &types);
