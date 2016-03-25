@@ -11,6 +11,8 @@
 #include "include/return_ast.h"
 #include "include/block_ast.h"
 #include "include/decl_var_ast.h"
+#include "include/assign_var_ast.h"
+#include "include/composite_ast.h"
 
 #include <algorithm>
 #include <fstream>
@@ -493,7 +495,7 @@ ASTPTR Parser::parseBlock() {
 			break;
 			case TokenType::IDENTIFIER:
 			{
-				result = parseDeclVar();
+				result = parseIdentifierStatement();
 			}
 			break;
 			default:
@@ -523,24 +525,57 @@ ASTPTR Parser::parseBlock() {
 	return std::make_unique<BlockAST>(currentFunctionsResultType, std::move(statements));
 }
 
-ASTPTR Parser::parseDeclVar() {
+ASTPTR Parser::parseIdentifierStatement() {
 	if(currentToken.getTokenType() != TokenType::IDENTIFIER) {
-		makeError("variable declaration expected");
+		makeError("identifier expected");
 		return nullptr;
 	}
 	auto name = lexer.getIdentifierString(currentToken.getValueIndex());
 	consumeToken();
-	if(currentToken.getTokenType() != TokenType::IDENTIFIER) {
-		makeError("variable type expected");
-		return nullptr;
+	if(currentToken.getTokenType() == TokenType::IDENTIFIER) {
+		auto type = stringToType(lexer.getIdentifierString(currentToken.getValueIndex()));
+		if(type == Type::VOID) {
+			makeError("invalid variable type");
+			return nullptr;
+		}
+		consumeToken();
+		if(environments.top().isDefined(name)) {
+			makeError("variable has already been declared");
+			return nullptr;
+		}
+		Variable var(type, name);
+		environments.top().add(name,var);
+		return std::make_unique<DeclVarAST>(var);
+	} else if(currentToken.getTokenType() == TokenType::ASSIGN) {
+		consumeToken();
+		auto expr = parseExpression();
+		if(!expr) {
+			return nullptr;
+		}
+		if(!environments.top().isDefined(name)) {
+			makeError("variable is not declared");
+			return nullptr;
+		}
+		auto var = environments.top().getValue(name);
+		return std::make_unique<AssignVarAST>(var, std::move(expr));
+	} else if(currentToken.getTokenType() == TokenType::DEFINE) {
+		consumeToken();
+		auto expr = parseExpression();
+		if(!expr) {
+			return nullptr;
+		}
+		if(environments.top().isDefined(name)) {
+			makeError("variable has already been declared");
+			return nullptr;
+		}
+		auto type = expr->getType();
+		Variable var(type, name);
+		environments.top().add(name, var);
+		return std::make_unique<CompositeAst>(std::make_unique<DeclVarAST>(var),
+											  std::make_unique<AssignVarAST>(var, std::move(expr)));
+	} else if(currentToken.getTokenType() == TokenType::LPAR) {
+		 // function call
 	}
-	auto type = stringToType(lexer.getIdentifierString(currentToken.getValueIndex()));
-	if(type == Type::VOID) {
-		makeError("invalid variable type");
-		return nullptr;
-	}
-	consumeToken();
-	Variable var(type, name);
-	environments.top().add(name,var);
-	return std::make_unique<DeclVarAST>(var);
+	makeError("unknown expression");
+	return nullptr;
 }

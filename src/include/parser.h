@@ -51,7 +51,7 @@ private:
 	ASTPTR parseBinaryExpressionRHS(int operatorPrecedence, ASTPTR lhs);
 	ASTPTR parseReturn();
 	ASTPTR parseBlock();
-	ASTPTR parseDeclVar();
+	ASTPTR parseIdentifierStatement();
 	bool parseFunctionDefinition();
 public:
 	Parser(std::ostream &errorStream);

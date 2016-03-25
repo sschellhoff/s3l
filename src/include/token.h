@@ -14,7 +14,9 @@ enum class TokenType {
 	SEMICOLON,
 	UNARYOPERATOR,
 	SEPARATOR,
-	RETURN
+	RETURN,
+	ASSIGN,
+	DEFINE
 };
 
 class Token {

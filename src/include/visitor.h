@@ -10,6 +10,8 @@ class VariableAST;
 class ReturnAST;
 class BlockAST;
 class DeclVarAST;
+class AssignVarAST;
+class CompositeAst;
 
 class Visitor {
 public:
@@ -23,4 +25,6 @@ public:
 	virtual void visit(ReturnAST *ast)=0;
 	virtual void visit(BlockAST *ast)=0;
 	virtual void visit(DeclVarAST *ast)=0;
+	virtual void visit(AssignVarAST *ast)=0;
+	virtual void visit(CompositeAst *ast)=0;
 };

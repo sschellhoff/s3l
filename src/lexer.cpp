@@ -88,19 +88,15 @@ Token Lexer::getNext() {
 				case '+':
 					currentPos++;
 					return Token(TokenType::OPERATOR, 0);
-				break;
 				case '-':
 					currentPos++;
 					return Token(TokenType::OPERATOR, 1);
-				break;
 				case '*':
 					currentPos++;
 					return Token(TokenType::OPERATOR, 2);
-				break;
 				case '/':
 					currentPos++;
 					return Token(TokenType::OPERATOR, 3);
-				break;
 				case '<':
 					currentPos++;
 					if(inputLeft() && input[currentPos] == '=') {
@@ -108,7 +104,6 @@ Token Lexer::getNext() {
 						return Token(TokenType::OPERATOR, 5);
 					}
 					return Token(TokenType::OPERATOR, 4);
-				break;
 				case '>':
 					currentPos++;
 					if(inputLeft() && input[currentPos] == '=') {
@@ -116,7 +111,6 @@ Token Lexer::getNext() {
 						return Token(TokenType::OPERATOR, 7);
 					}
 					return Token(TokenType::OPERATOR, 6);
-				break;
 				case '(':
 					currentPos++;
 					return Token(TokenType::LPAR, 0);
@@ -138,7 +132,7 @@ Token Lexer::getNext() {
 						currentPos++;
 						return Token(TokenType::OPERATOR, 12);
 					}
-					return Token(TokenType::ERROR);
+					return Token(TokenType::ASSIGN);
 				case '!':
 					currentPos++;
 					if(inputLeft() && input[currentPos] == '=') {
@@ -162,10 +156,17 @@ Token Lexer::getNext() {
 					return Token(TokenType::ERROR);
 				case ';':
 					currentPos++;
-					return Token(TokenType::SEMICOLON, 0);
+					return Token(TokenType::SEMICOLON);
 				case ',':
 					currentPos++;
-					return Token(TokenType::SEPARATOR, 0);
+					return Token(TokenType::SEPARATOR);
+				case ':':
+					currentPos++;
+					if(inputLeft() && input[currentPos] == '=') {
+						currentPos++;
+						return Token(TokenType::DEFINE);
+					}
+					return Token(TokenType::ERROR);
 				default:
 				break;
 			}

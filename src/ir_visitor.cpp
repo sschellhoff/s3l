@@ -238,6 +238,17 @@ void IRVisitor::visit(DeclVarAST *ast) {
 	environments.top().add(name, IRVAR(type, name, arg_alloc));
 }
 
+void IRVisitor::visit(AssignVarAST *ast) {
+	auto var = environments.top().getValue(ast->getVariable().getName());
+	ast->getExpression()->accept(*this);
+	builder.CreateStore(currentValue, var.getIRVariable(), false);
+}
+
+void IRVisitor::visit(CompositeAst *ast) {
+	ast->getFirst()->accept(*this);
+	ast->getSecond()->accept(*this);
+}
+
 void IRVisitor::print() {
 	if(currentValue) {
 		currentValue->dump();
