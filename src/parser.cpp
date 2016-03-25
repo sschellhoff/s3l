@@ -574,7 +574,42 @@ ASTPTR Parser::parseIdentifierStatement() {
 		return std::make_unique<CompositeAst>(std::make_unique<DeclVarAST>(var),
 											  std::make_unique<AssignVarAST>(var, std::move(expr)));
 	} else if(currentToken.getTokenType() == TokenType::LPAR) {
-		 // function call
+		consumeToken();
+
+		std::vector<ASTPTR> arguments;
+		while(currentToken.getTokenType() != TokenType::RPAR) {
+			auto arg = parseExpression();
+			if(!arg) {
+				makeError("error parsing arguments in function call");
+				return nullptr;
+			}
+			arguments.push_back(std::move(arg));
+			if(currentToken.getTokenType() != TokenType::RPAR) {
+				if(currentToken.getTokenType() == TokenType::SEPARATOR) {
+					consumeToken();
+				} else {
+					makeError("error parsing arguments in function call");
+					return nullptr;
+				}
+			}
+		}
+
+		if(currentToken.getTokenType() != TokenType::RPAR) {
+			makeError("missing )");
+			return nullptr;
+		}
+		consumeToken();
+		auto call = std::make_unique<FunctionCallAST>(name, std::move(arguments));
+		auto resultType = call->getType();
+		if(resultType == Type::VOID) {
+			return std::move(call);
+		} else {
+			auto anonVarName = environments.top().getAnonymVariableName();
+			Variable anonVar(resultType, anonVarName);
+			environments.top().add(anonVarName, anonVar);
+			return std::make_unique<CompositeAst>(std::make_unique<DeclVarAST>(anonVar),
+												  std::make_unique<AssignVarAST>(anonVar, std::move(call)));
+		}
 	}
 	makeError("unknown expression");
 	return nullptr;
