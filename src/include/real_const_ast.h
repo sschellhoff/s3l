@@ -2,11 +2,11 @@
 
 #include "ast.h"
 
-class NumberConstAST : public AST {
+class RealConstAST : public AST {
 private:
 	double value;
 public:
-	NumberConstAST(double value);
+	RealConstAST(double value);
 
 	double getValue() const;
 	

@@ -1,6 +1,7 @@
 #pragma once
 
-class NumberConstAST;
+class IntConstAST;
+class RealConstAST;
 class BoolConstAST;
 class BinaryExpressionAST;
 class FunctionCallAST;
@@ -16,7 +17,8 @@ class IfAST;
 
 class Visitor {
 public:
-	virtual void visit(NumberConstAST *ast)=0;
+	virtual void visit(IntConstAST *ast)=0;
+	virtual void visit(RealConstAST *ast)=0;
 	virtual void visit(BoolConstAST *ast)=0;
 	virtual void visit(BinaryExpressionAST *ast)=0;
 	virtual void visit(FunctionCallAST *ast)=0;

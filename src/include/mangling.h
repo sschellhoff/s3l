@@ -7,6 +7,9 @@
 #include "function_prototype.h"
 
 std::string getMangledFunctionName(const std::string &name, std::vector<Type> &types) {
+    if(name == "main" && types.empty()) {
+        return name;
+    }
     std::stringstream sstream;
     sstream << "_Z" << name.length() << name;
     if(types.empty()) {
@@ -17,8 +20,11 @@ std::string getMangledFunctionName(const std::string &name, std::vector<Type> &t
                 case Type::BOOL:
                     sstream << "b";
                     break;
-                case Type::NUMBER:
+                case Type::REAL:
                     sstream << "d";
+                    break;
+                case Type::INT:
+                    sstream << "i";
                     break;
                 default:
                     break;

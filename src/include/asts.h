@@ -1,0 +1,16 @@
+#pragma once
+
+#include "int_const_ast.h"
+#include "real_const_ast.h"
+#include "bool_const_ast.h"
+#include "function_call_ast.h"
+#include "binary_expression_ast.h"
+#include "function_call_ast.h"
+#include "unary_operator_ast.h"
+#include "variable_ast.h"
+#include "return_ast.h"
+#include "block_ast.h"
+#include "decl_var_ast.h"
+#include "assign_var_ast.h"
+#include "composite_ast.h"
+#include "if_ast.h"

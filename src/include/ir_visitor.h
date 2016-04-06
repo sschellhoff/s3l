@@ -14,7 +14,8 @@
 #include "environment.h"
 #include "ir_variable.h"
 
-#include "number_const_ast.h"
+#include "int_const_ast.h"
+#include "real_const_ast.h"
 #include "bool_const_ast.h"
 #include "binary_expression_ast.h"
 #include "function_call_ast.h"
@@ -43,7 +44,8 @@ private:
 	llvm::Type *typeConversion(Type type)const;
 public:
 	IRVisitor():theModule(std::make_unique<llvm::Module>("my llvm module", llvm::getGlobalContext())), builder(llvm::getGlobalContext()){}
-	virtual void visit(NumberConstAST *ast);
+	virtual void visit(IntConstAST *ast);
+	virtual void visit(RealConstAST *ast);
 	virtual void visit(BoolConstAST *ast);
 	virtual void visit(BinaryExpressionAST *ast);
 	virtual void visit(FunctionCallAST *ast);

@@ -2,19 +2,7 @@
 #include "include/make_unique.h"
 #include "include/mangling.h"
 #include "include/variable.h"
-#include "include/number_const_ast.h"
-#include "include/bool_const_ast.h"
-#include "include/function_call_ast.h"
-#include "include/binary_expression_ast.h"
-#include "include/function_call_ast.h"
-#include "include/unary_operator_ast.h"
-#include "include/variable_ast.h"
-#include "include/return_ast.h"
-#include "include/block_ast.h"
-#include "include/decl_var_ast.h"
-#include "include/assign_var_ast.h"
-#include "include/composite_ast.h"
-#include "include/if_ast.h"
+#include "include/asts.h"
 
 #include <algorithm>
 #include <fstream>
@@ -43,7 +31,7 @@ bool Parser::isValidOperator(const Operator op, const Type t1, const Type t2)con
 		case Operator::NE:
 			return true;
 		case Operator::ADD:
-			return t1 == Type::NUMBER || t1 == Type::BOOL;
+			return t1 == Type::REAL || t1 == Type::INT || t1 == Type::BOOL;
 		case Operator::SUB:
 		case Operator::MULT:
 		case Operator::DIV:
@@ -51,7 +39,7 @@ bool Parser::isValidOperator(const Operator op, const Type t1, const Type t2)con
 		case Operator::LE:
 		case Operator::GT:
 		case Operator::GE:
-			return t1 == Type::NUMBER;
+			return t1 == Type::REAL || t1 == Type::INT;
 		case Operator::AND:
 		case Operator::OR:
 		case Operator::IMPL:
@@ -103,7 +91,7 @@ bool Parser::isValidOperator(const UnaryOperator op, const Type t1)const {
 		case UnaryOperator::NOT:
 			return t1 == Type::BOOL;
 		case UnaryOperator::NEG:
-			return t1 == Type::NUMBER;
+			return t1 == Type::REAL || t1 == Type::INT;
 		default:
 			return false;
 	}
@@ -130,10 +118,12 @@ bool Parser::tryConsumeIdentifier(const std::string &name) {
 }
 
 Type Parser::stringToType(const std::string &typeString)const {
-	if(typeString == "bool") {
+	if(typeString == "int") {
+		return Type::INT;
+	} else if(typeString == "bool") {
 		return Type::BOOL;
-	} else if(typeString == "number") {
-		return Type::NUMBER;
+	} else if(typeString == "real") {
+		return Type::REAL;
 	} else {
 		return Type::VOID;
 	}
@@ -223,7 +213,8 @@ FUNCVECPTR Parser::parseFile(const std::string &filename) {
 
 ASTPTR Parser::parsePrimeExpression() {
 	switch(currentToken.getTokenType()) {
-		case TokenType::NUMBER:
+		case TokenType::INT:
+		case TokenType::REAL:
 			return parseNumberConst();
 		case TokenType::BOOL:
 			return parseBoolConst();
@@ -280,13 +271,17 @@ ASTPTR Parser::parsePrimeExpression() {
 }
 
 ASTPTR Parser::parseNumberConst() {
-	if(currentToken.getTokenType() != TokenType::NUMBER) {		
-		makeError("number constant expected");
-		return nullptr;
+	if(currentToken.getTokenType() == TokenType::INT) {
+		auto result = std::make_unique<IntConstAST>(lexer.getIntConstant(currentToken.getValueIndex()));
+		consumeToken();
+		return std::move(result);
+	} else if(currentToken.getTokenType() == TokenType::REAL) {
+		auto result = std::make_unique<RealConstAST>(lexer.getDoubleConstant(currentToken.getValueIndex()));
+		consumeToken();
+		return std::move(result);
 	}
-	auto result = std::make_unique<NumberConstAST>(lexer.getDoubleConstant(currentToken.getValueIndex()));
-	consumeToken();
-	return std::move(result);
+	makeError("number constant expected");
+	return nullptr;
 }
 
 ASTPTR Parser::parseBoolConst() {

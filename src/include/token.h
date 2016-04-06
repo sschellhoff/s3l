@@ -5,7 +5,7 @@ enum class TokenType {
 	EOI,
 	IDENTIFIER,
 	INT,
-	NUMBER,
+	REAL,
 	BOOL,
 	OPERATOR,
 	LPAR,

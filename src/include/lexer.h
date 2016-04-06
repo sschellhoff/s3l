@@ -8,7 +8,8 @@
 
 class Lexer {
 private:
-	std::vector<double> numericalConstants;
+	std::vector<double> realConstants;
+	std::vector<int> intConstants;
 	std::vector<std::string> identifier;
 	std::vector<Operator> operators;
 	std::vector<UnaryOperator> unaryOperators;
@@ -17,6 +18,8 @@ private:
 	void skipWhitespaces();
 	bool inputLeft()const;
 	void initOperators();
+	int addRealConstant(double val);
+	int addIntConstant(int val);
 public:
 	Lexer();
 	Lexer(const std::string &input);
@@ -24,6 +27,7 @@ public:
 	Token getNext();
 	std::string getIdentifierString(int index)const;
 	double getDoubleConstant(int index)const;
+	double getIntConstant(int index)const;
 	Operator getOperator(int index)const;
 	UnaryOperator getUnaryOperator(int index)const;
 };

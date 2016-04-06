@@ -5,9 +5,11 @@
 
 llvm::Type *IRVisitor::typeConversion(Type type)const {
 	switch(type) {
+		case Type::INT:
+			return llvm::IntegerType::get(llvm::getGlobalContext(), 32);
 		case Type::BOOL:
 			return llvm::IntegerType::get(llvm::getGlobalContext(), 1);
-		case Type::NUMBER:
+		case Type::REAL:
 			return llvm::Type::getDoubleTy(llvm::getGlobalContext());
 		default:
 			fprintf(stderr, "wrong operator\n");
@@ -15,7 +17,11 @@ llvm::Type *IRVisitor::typeConversion(Type type)const {
 	}
 }
 
-void IRVisitor::visit(NumberConstAST *ast) {
+void IRVisitor::visit(IntConstAST *ast) {
+	currentValue = llvm::ConstantInt::get(llvm::getGlobalContext(), llvm::APInt(32, ast->getValue(), true));
+}
+
+void IRVisitor::visit(RealConstAST *ast) {
 	currentValue = llvm::ConstantFP::get(llvm::getGlobalContext(), llvm::APFloat(ast->getValue()));
 }
 
@@ -29,44 +35,47 @@ void IRVisitor::visit(BinaryExpressionAST *ast) {
 	ast->getRHS()->accept(*this);
 	llvm::Value *rhs = currentValue;
 	auto type = ast->getLHS()->getType();
-	if(type == Type::NUMBER) {
-		switch(ast->getOperator()) {
+	if (type == Type::REAL) {
+		switch (ast->getOperator()) {
 			case Operator::ADD:
-			currentValue = builder.CreateFAdd(lhs, rhs, "addFloat");
-			break;
+				currentValue = builder.CreateFAdd(lhs, rhs, "addFloat");
+				break;
 			case Operator::SUB:
-			currentValue = builder.CreateFSub(lhs, rhs, "subFloat");
-			break;
+				currentValue = builder.CreateFSub(lhs, rhs, "subFloat");
+				break;
 			case Operator::MULT:
-			currentValue = builder.CreateFMul(lhs, rhs, "multFloat");
-			break;
+				currentValue = builder.CreateFMul(lhs, rhs, "multFloat");
+				break;
 			case Operator::DIV:
-			currentValue = builder.CreateFDiv(lhs, rhs, "divFloat");
-			break;
+				currentValue = builder.CreateFDiv(lhs, rhs, "divFloat");
+				break;
 			case Operator::EQ:
-			currentValue = builder.CreateFCmpOEQ(lhs, rhs, "eqFloat");
-			break;
+				currentValue = builder.CreateFCmpOEQ(lhs, rhs, "eqFloat");
+				break;
 			case Operator::NE:
-			currentValue = builder.CreateFCmpUNE(lhs, rhs, "neFloat");
-			break;
+				currentValue = builder.CreateFCmpUNE(lhs, rhs, "neFloat");
+				break;
 			case Operator::LT:
-			currentValue = builder.CreateFCmpULT(lhs, rhs, "ltFloat");
-			break;
+				currentValue = builder.CreateFCmpULT(lhs, rhs, "ltFloat");
+				break;
 			case Operator::LE:
-			currentValue = builder.CreateFCmpULE(lhs, rhs, "leFloat");
-			break;
+				currentValue = builder.CreateFCmpULE(lhs, rhs, "leFloat");
+				break;
 			case Operator::GT:
-			currentValue = builder.CreateFCmpUGT(lhs, rhs, "gtFloat");
-			break;
+				currentValue = builder.CreateFCmpUGT(lhs, rhs, "gtFloat");
+				break;
 			case Operator::GE:
-			currentValue = builder.CreateFCmpUGE(lhs, rhs, "geFloat");
-			break;
+				currentValue = builder.CreateFCmpUGE(lhs, rhs, "geFloat");
+				break;
 			default:
-			fprintf(stderr, "wrong operator\n");
-			// error
-			// currentValue = nullptr;
-			break;
+				fprintf(stderr, "wrong operator\n");
+				// error
+				// currentValue = nullptr;
+				break;
 		}
+	} else if(type == Type::INT) {
+		fprintf(stderr, "int not implemented in ir\n");
+
 	} else if(type == Type::BOOL) {
 		switch(ast->getOperator()) {
 			case Operator::EQ:
@@ -129,9 +138,11 @@ void IRVisitor::visit(FunctionDefinitionAST *ast) {
 		args.push_back(typeConversion(arg.getType()));
 	}
 	llvm::FunctionType *funcType;
-	if(ast->getType() == Type::BOOL) {
+	if(ast->getType() == Type::INT) {
+		funcType = llvm::FunctionType::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), args, false);
+	} else if(ast->getType() == Type::BOOL) {
 		funcType = llvm::FunctionType::get(llvm::Type::getInt1Ty(llvm::getGlobalContext()), args, false);
-	} else if(ast->getType() == Type::NUMBER) {
+	} else if(ast->getType() == Type::REAL) {
 		funcType = llvm::FunctionType::get(llvm::Type::getDoubleTy(llvm::getGlobalContext()), args, false);
 	} else if(ast->getType() == Type::VOID) {
 		funcType = llvm::FunctionType::get(llvm::Type::getVoidTy(llvm::getGlobalContext()), args, false);

@@ -2,6 +2,7 @@
 
 enum class Type {
 	VOID,
-	NUMBER,
+	REAL,
+	INT,
 	BOOL
 };

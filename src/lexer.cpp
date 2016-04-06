@@ -31,6 +31,28 @@ void Lexer::initOperators() {
 	unaryOperators.push_back(UnaryOperator::NOT);
 }
 
+int Lexer::addRealConstant(double val) {
+	auto it = std::find(realConstants.begin(), realConstants.end(), val);
+	int index = realConstants.size();
+	if(it != realConstants.end()) {
+		index = it - realConstants.begin();
+	} else {
+		realConstants.push_back(val);
+	}
+	return index;
+}
+
+int Lexer::addIntConstant(int val) {
+	auto it = std::find(intConstants.begin(), intConstants.end(), val);
+	int index = intConstants.size();
+	if(it != intConstants.end()) {
+		index = it - intConstants.begin();
+	} else {
+		intConstants.push_back(val);
+	}
+	return index;
+}
+
 void Lexer::setInput(const std::string &input) {
 	this->input = input;
 	currentPos = 0;
@@ -54,16 +76,14 @@ Token Lexer::getNext() {
 					buffer << input[currentPos];
 					currentPos++;
 				}
-			}
-			auto element = std::stod(buffer.str(), nullptr);
-			auto it = std::find(numericalConstants.begin(), numericalConstants.end(), element);
-			int index = numericalConstants.size();
-			if(it != numericalConstants.end()) {
-				index = it - numericalConstants.begin();
+				auto element = std::stod(buffer.str(), nullptr);
+				auto index = addRealConstant(element);
+				return Token(TokenType::REAL, index);
 			} else {
-				numericalConstants.push_back(element);
+				auto element = std::stoi(buffer.str(), nullptr);
+				auto index = addIntConstant(element);
+				return Token(TokenType::INT, index); // INT
 			}
-			return Token(TokenType::NUMBER, index);
 		} else if(isalpha(input[currentPos]) || input[currentPos] == '_') {
 			std::stringstream buffer;
 			buffer << input[currentPos];
@@ -198,7 +218,11 @@ std::string Lexer::getIdentifierString(int index) const {
 }
 
 double Lexer::getDoubleConstant(int index) const {
-	return numericalConstants[index];
+	return realConstants[index];
+}
+
+double Lexer::getIntConstant(int index) const {
+	return intConstants[index];
 }
 
 Operator Lexer::getOperator(int index) const {

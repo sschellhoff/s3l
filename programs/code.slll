@@ -1,11 +1,3 @@
-checkd() number {
-	return 1337
-}
-
-checkb() bool {
-	return true
-}
-
-test() bool {
-	return checkd() > 42 || checkb()
+main() int {
+	return 42
 }
