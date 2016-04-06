@@ -1,11 +1,11 @@
-jaja() {
-	return;
+checkd() number {
+	return 1337
 }
 
-hii() bool {
+checkb() bool {
 	return true
 }
 
-check() number {
-return 1337
+test() bool {
+	return checkd() > 42 || checkb()
 }

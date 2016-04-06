@@ -12,6 +12,7 @@ class BlockAST;
 class DeclVarAST;
 class AssignVarAST;
 class CompositeAst;
+class IfAST;
 
 class Visitor {
 public:
@@ -27,4 +28,5 @@ public:
 	virtual void visit(DeclVarAST *ast)=0;
 	virtual void visit(AssignVarAST *ast)=0;
 	virtual void visit(CompositeAst *ast)=0;
+	virtual void visit(IfAST *ast)=0;
 };

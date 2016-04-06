@@ -79,6 +79,12 @@ Token Lexer::getNext() {
 				return Token(TokenType::BOOL, 0);
 			} else if(identifierValue == "return") {
 				return Token(TokenType::RETURN, 0);
+			} else if(identifierValue == "if") {
+				return Token(TokenType::IF);
+			} else if(identifierValue == "else") {
+				return Token(TokenType::ELSE);
+			} else if(identifierValue == "loop") {
+				return Token(TokenType::LOOP);
 			}
 			int index = identifier.size();
 			identifier.push_back(buffer.str());

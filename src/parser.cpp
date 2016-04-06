@@ -1,5 +1,6 @@
 #include "include/parser.h"
 #include "include/make_unique.h"
+#include "include/mangling.h"
 #include "include/variable.h"
 #include "include/number_const_ast.h"
 #include "include/bool_const_ast.h"
@@ -13,6 +14,7 @@
 #include "include/decl_var_ast.h"
 #include "include/assign_var_ast.h"
 #include "include/composite_ast.h"
+#include "include/if_ast.h"
 
 #include <algorithm>
 #include <fstream>
@@ -81,6 +83,21 @@ Type Parser::determineOperatorResult(const Operator op, const Type t1, const Typ
 	}
 }
 
+Type Parser::getFunctionResultType(const std::string &name, std::vector<Type> &types) {
+	for(auto &funcDef : functionDefinitions) {
+		if(funcDef.equals(name, types)) {
+			return funcDef.getResultType();
+		}
+	}
+	for(auto &funcDef : functionDeclarations) {
+		if(funcDef.equals(name, types)) {
+			return funcDef.getResultType();
+		}
+	}
+	makeError("cyka");
+	return Type::VOID;
+}
+
 bool Parser::isValidOperator(const UnaryOperator op, const Type t1)const {
 	switch(op) {
 		case UnaryOperator::NOT:
@@ -112,10 +129,6 @@ bool Parser::tryConsumeIdentifier(const std::string &name) {
 	return false;
 }
 
-bool Parser::isFunctionCallable(const std::string &name, std::vector<Type> argTypes)const {
-	return false;
-}
-
 Type Parser::stringToType(const std::string &typeString)const {
 	if(typeString == "bool") {
 		return Type::BOOL;
@@ -126,9 +139,27 @@ Type Parser::stringToType(const std::string &typeString)const {
 	}
 }
 
+bool Parser::isFunctionDefined(const std::string &name, std::vector<Type> &types) {
+	for(auto &funcDef : functionDefinitions) {
+		if(funcDef.equals(name, types)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool Parser::isFunctionDefined(const std::string &name, Type resultType, std::vector<Type> &types) {
 	for(auto &funcDef : functionDefinitions) {
 		if(funcDef.equals(name, resultType, types)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool Parser::isFunctionDeclared(const std::string &name, std::vector<Type> &types) {
+	for(auto &funcDef : functionDeclarations) {
+		if(funcDef.equals(name, types)) {
 			return true;
 		}
 	}
@@ -287,12 +318,14 @@ ASTPTR Parser::parseIdentifierExpression() {
 	consumeToken();
 
 	std::vector<ASTPTR> arguments;
+	std::vector<Type> argTypes;
 	while(currentToken.getTokenType() != TokenType::RPAR) {
 		auto arg = parseExpression();
-		if(!arg) {
+		if(!arg || arg->getType() == Type::VOID) {
 			makeError("error parsing arguments in function call");
 			return nullptr;
 		}
+		argTypes.push_back(arg->getType());
 		arguments.push_back(std::move(arg));
 		if(currentToken.getTokenType() != TokenType::RPAR) {
 			if(currentToken.getTokenType() == TokenType::SEPARATOR) {
@@ -304,12 +337,20 @@ ASTPTR Parser::parseIdentifierExpression() {
 		}
 	}
 
+	identifierName = getMangledFunctionName(identifierName, argTypes);
+
+	if(!isFunctionDefined(identifierName, argTypes) && !isFunctionDeclared(identifierName, argTypes)) {
+		makeError("unable to call unknown function");
+		return nullptr;
+	}
+	Type resultType = getFunctionResultType(identifierName, argTypes);
+
 	if(currentToken.getTokenType() != TokenType::RPAR) {
 		makeError("missing )");
 		return nullptr;
 	}
 	consumeToken();
-	return std::make_unique<FunctionCallAST>(identifierName, std::move(arguments));
+	return std::make_unique<FunctionCallAST>(identifierName, resultType, std::move(arguments));
 }
 
 ASTPTR Parser::parseExpression() {
@@ -396,6 +437,7 @@ bool Parser::parseFunctionDefinition() {
 		}
 		environments.top().add(argName, Variable(argType, argName));
 		arguments.push_back(Variable(argType, argName));
+		argumentTypes.push_back(argType);
 		if(currentToken.getTokenType() != TokenType::SEPARATOR) {
 			if(currentToken.getTokenType() != TokenType::RPAR) {
 				makeError("error in function definition - parameter list");
@@ -411,6 +453,9 @@ bool Parser::parseFunctionDefinition() {
 		return false;
 	}
 	consumeToken();
+
+	functionName = getMangledFunctionName(functionName, argumentTypes);
+
 	Type resultType = Type::VOID;
 
 	if(currentToken.getTokenType() == TokenType::IDENTIFIER) {
@@ -428,8 +473,11 @@ bool Parser::parseFunctionDefinition() {
 		if(!body) {
 			return false;
 		}
-		if(isFunctionDefined(functionName, resultType, argumentTypes)) {
+		if(isFunctionDefined(functionName, argumentTypes)) {
 			makeError("doubled function definition");
+			return false;
+		} else if(isFunctionDeclared(functionName, argumentTypes) && !isFunctionDeclared(functionName, resultType, argumentTypes)) {
+			makeError("function definition does not fit it's declaration");
 			return false;
 		}
 		removeDeclarationIfNeeded(functionName, resultType, argumentTypes);
@@ -442,7 +490,18 @@ bool Parser::parseFunctionDefinition() {
 		environments.pop();
 		return true;
 	} else if(currentToken.getTokenType() == TokenType::SEMICOLON) {
-		if(!isFunctionDefined(functionName, resultType, argumentTypes) && !isFunctionDeclared(functionName, resultType, argumentTypes)) {
+		consumeToken();
+		if(isFunctionDefined(functionName, argumentTypes)) {
+			if(!isFunctionDefined(functionName, resultType, argumentTypes)) {
+				makeError("function already defined with other result type");
+				return false;
+			}
+		} else if(isFunctionDeclared(functionName, argumentTypes)) {
+			if(!isFunctionDeclared(functionName, resultType, argumentTypes)) {
+				makeError("function already declared with other result type");
+				return false;
+			}
+		} else {
 			functionDeclarations.push_back(FunctionPrototype(functionName, resultType, std::move(arguments)));
 		}
 		environments.pop();
@@ -500,6 +559,16 @@ ASTPTR Parser::parseBlock() {
 			case TokenType::IDENTIFIER:
 			{
 				result = parseIdentifierStatement();
+			}
+			break;
+			case TokenType::IF:
+			{
+				result = parseIf();
+			}
+			break;
+			case TokenType::LOOP:
+			{
+				result = parseLoop();
 			}
 			break;
 			default:
@@ -581,12 +650,14 @@ ASTPTR Parser::parseIdentifierStatement() {
 		consumeToken();
 
 		std::vector<ASTPTR> arguments;
+		std::vector<Type> argTypes;
 		while(currentToken.getTokenType() != TokenType::RPAR) {
 			auto arg = parseExpression();
-			if(!arg) {
+			if(!arg || arg->getType() == Type::VOID) {
 				makeError("error parsing arguments in function call");
 				return nullptr;
 			}
+			argTypes.push_back(arg->getType());
 			arguments.push_back(std::move(arg));
 			if(currentToken.getTokenType() != TokenType::RPAR) {
 				if(currentToken.getTokenType() == TokenType::SEPARATOR) {
@@ -603,8 +674,17 @@ ASTPTR Parser::parseIdentifierStatement() {
 			return nullptr;
 		}
 		consumeToken();
-		auto call = std::make_unique<FunctionCallAST>(name, std::move(arguments));
-		auto resultType = call->getType();
+
+		name = getMangledFunctionName(name, argTypes);
+
+		if(!isFunctionDefined(name, argTypes) && !isFunctionDeclared(name, argTypes)) {
+			makeError("unable to call unknown function");
+			return nullptr;
+		}
+
+		Type resultType = getFunctionResultType(name, argTypes);
+		auto call = std::make_unique<FunctionCallAST>(name, resultType, std::move(arguments));
+
 		if(resultType == Type::VOID) {
 			return std::move(call);
 		} else {
@@ -617,4 +697,37 @@ ASTPTR Parser::parseIdentifierStatement() {
 	}
 	makeError("unknown expression");
 	return nullptr;
+}
+
+ASTPTR Parser::parseIf() {
+	if(currentToken.getTokenType() != TokenType::IF) {
+		makeError("expected if construct");
+		return nullptr;
+	}
+	consumeToken();
+	auto condition = parseExpression();
+	if(!condition) {
+		return nullptr;
+	}
+	if(condition->getType() != Type::BOOL) {
+		makeError("condition must be of type bool");
+		return nullptr;
+	}
+	auto block = parseBlock();
+	if(!block) {
+		return nullptr;
+	}
+	if(currentToken.getTokenType() != TokenType::ELSE) {
+		return std::make_unique<IfAST>(std::move(condition), std::move(block));
+	}
+	consumeToken();
+	auto elseBlock = parseBlock();
+	if(!elseBlock) {
+		return nullptr;
+	}
+	return std::make_unique<IfAST>(std::move(condition), std::move(block), std::move(elseBlock));
+}
+
+ASTPTR Parser::parseLoop() {
+
 }

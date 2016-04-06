@@ -4,6 +4,7 @@ enum class TokenType {
 	ERROR,
 	EOI,
 	IDENTIFIER,
+	INT,
 	NUMBER,
 	BOOL,
 	OPERATOR,
@@ -16,7 +17,10 @@ enum class TokenType {
 	SEPARATOR,
 	RETURN,
 	ASSIGN,
-	DEFINE
+	DEFINE,
+	IF,
+	ELSE,
+	LOOP
 };
 
 class Token {

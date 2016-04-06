@@ -11,7 +11,7 @@ private:
 std::string name;
 std::vector<std::unique_ptr<AST> > argumentValues;
 public:
-	FunctionCallAST(const std::string &name, std::vector<std::unique_ptr<AST> > &&arguments);
+	FunctionCallAST(const std::string &name, Type resultType, std::vector<std::unique_ptr<AST> > &&arguments);
 	const std::string &getName()const;
 	const std::vector<std::unique_ptr<AST> > &getArguments()const;
 	virtual void accept(Visitor &visitor);

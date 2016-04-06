@@ -3,6 +3,7 @@
 #include <memory>
 #include <iostream>
 #include <stack>
+#include <map>
 
 #include "llvm/IR/Module.h"
 #include "llvm/IR/IRBuilder.h"
@@ -25,10 +26,12 @@
 #include "decl_var_ast.h"
 #include "assign_var_ast.h"
 #include "composite_ast.h"
+#include "if_ast.h"
 
 using IRVAR = IRVariable<llvm::Value>;
 using IRENV = Environment<IRVAR>;
 using IRENVSTACK = std::stack<IRENV>;
+using FUNCMAP = std::map<std::string, llvm::Function*>;
 
 class IRVisitor : public Visitor {
 private:
@@ -36,6 +39,7 @@ private:
 	llvm::IRBuilder<> builder;
 	llvm::Value *currentValue;
 	IRENVSTACK environments;
+	FUNCMAP functionMap;
 	llvm::Type *typeConversion(Type type)const;
 public:
 	IRVisitor():theModule(std::make_unique<llvm::Module>("my llvm module", llvm::getGlobalContext())), builder(llvm::getGlobalContext()){}
@@ -51,6 +55,7 @@ public:
 	virtual void visit(DeclVarAST *ast);
 	virtual void visit(AssignVarAST *ast);
 	virtual void visit(CompositeAst *ast);
+	virtual void visit(IfAST *ast);
 
 	void print();
 	void printModule();

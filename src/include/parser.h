@@ -34,14 +34,16 @@ private:
 	Type stringToType(const std::string &typeString)const;
 	bool isValidOperator(const Operator op, const Type t1, const Type t2)const;
 	Type determineOperatorResult(const Operator op, const Type t1, const Type t2)const;
+	Type getFunctionResultType(const std::string &name, std::vector<Type> &types);
 	bool isValidOperator(const UnaryOperator op, const Type t1)const;
 	void makeError(const std::string &msg);
 	void consumeToken();
 	bool isIdentifier(const std::string &name);
 	bool tryConsumeIdentifier(const std::string &name);
-	bool isFunctionCallable(const std::string &name, std::vector<Type> argTypes)const;
 	bool isFunctionDefined(const std::string &name, Type resultType, std::vector<Type> &types);
+	bool isFunctionDefined(const std::string &name, std::vector<Type> &types);
 	bool isFunctionDeclared(const std::string &name, Type resultType, std::vector<Type> &types);
+	bool isFunctionDeclared(const std::string &name, std::vector<Type> &types);
 	bool removeDeclarationIfNeeded(const std::string &name, Type resultType, std::vector<Type> &types);
 	std::vector<Type> argumentsToTypes(std::vector<Variable> &arguments)const;
 	ASTPTR parsePrimeExpression();
@@ -52,6 +54,8 @@ private:
 	ASTPTR parseBinaryExpressionRHS(int operatorPrecedence, ASTPTR lhs);
 	ASTPTR parseReturn();
 	ASTPTR parseBlock();
+	ASTPTR parseIf();
+	ASTPTR parseLoop();
 	ASTPTR parseIdentifierStatement();
 	bool parseFunctionDefinition();
 public:

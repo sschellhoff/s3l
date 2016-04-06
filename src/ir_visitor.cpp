@@ -114,7 +114,11 @@ void IRVisitor::visit(FunctionCallAST *ast) {
 	 	arg->accept(*this);
 	 	argValues.push_back(currentValue);
 	 }
-	 currentValue = builder.CreateCall(function, argValues, ast->getName());
+	 if(function->getReturnType()->isVoidTy()) {
+		 currentValue = builder.CreateCall(function, argValues, "");
+	 } else {
+		 currentValue = builder.CreateCall(function, argValues, ast->getName());
+	 }
 }
 
 void IRVisitor::visit(FunctionDefinitionAST *ast) {
@@ -247,6 +251,10 @@ void IRVisitor::visit(AssignVarAST *ast) {
 void IRVisitor::visit(CompositeAst *ast) {
 	ast->getFirst()->accept(*this);
 	ast->getSecond()->accept(*this);
+}
+
+void IRVisitor::visit(IfAST *ast) {
+	// must be done!!
 }
 
 void IRVisitor::print() {
