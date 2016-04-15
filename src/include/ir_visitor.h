@@ -47,6 +47,8 @@ public:
 	virtual void visit(IfAST *ast);
 	virtual void visit(WhileAST *ast);
 
+	void addConstResult(Type type);
+
 	void printModule();
 	void writeModule(std::ostream &outStream);
 };

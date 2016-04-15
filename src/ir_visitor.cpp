@@ -199,9 +199,9 @@ void IRVisitor::visit(FunctionDefinitionAST *ast) {
 
 	ast->getBody()->accept(*this);
 	if(currentValue) {
-		//builder.CreateRet(currentValue);
+		addConstResult(ast->getType());
+
 		llvm::verifyFunction(*func);
-		//func->dump();
 		environments.pop();
 		return;
 	}
@@ -343,6 +343,29 @@ void IRVisitor::visit(WhileAST *ast) {
 	block->accept(*this);
 	builder.CreateBr(condBBlock);
 	builder.SetInsertPoint(afterBBlock);
+}
+
+void IRVisitor::addConstResult(Type type) {
+	switch(type) {
+		case Type::BOOL: {
+			auto constant = llvm::ConstantInt::get(llvm::getGlobalContext(), llvm::APInt(1, 0, true));
+			builder.CreateRet(constant);
+		}
+			break;
+		case Type::INT: {
+			auto constant = llvm::ConstantInt::get(llvm::getGlobalContext(), llvm::APInt(32, 0, true));
+			builder.CreateRet(constant);
+		}
+			break;
+		case Type::REAL: {
+			auto constant = llvm::ConstantFP::get(llvm::getGlobalContext(), llvm::APFloat(0.0));
+			builder.CreateRet(constant);
+		}
+			break;
+		case Type::VOID:
+			builder.CreateRetVoid();
+			break;
+	}
 }
 
 void IRVisitor::printModule() {

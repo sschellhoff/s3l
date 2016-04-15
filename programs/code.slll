@@ -6,7 +6,6 @@ calc(a int) int {
 	} else {
 		return 1
 	}
-	return 0
 }
 
 main() int {
