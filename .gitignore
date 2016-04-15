@@ -34,9 +34,6 @@ bin/
 # asm files
 *.s
 
-# Shell Scripts
-*.sh
-
 #CLion
 *.xml
 *.iml
