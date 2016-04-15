@@ -15,7 +15,7 @@ public:
     unsigned short getColumn()const { return column; }
     virtual const char *what()const throw() {
         std::stringstream sstream;
-        sstream << "ERROR - line: " << line << ", column: "  << column << ", \"" << msg << "\"" << std::endl;
+        sstream << "PARSING ERROR - line: " << line << ", column: "  << column << ", \"" << msg << "\"" << std::endl;
         std::string result = sstream.str();
         return result.c_str();
     }

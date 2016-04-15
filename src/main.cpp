@@ -5,6 +5,7 @@
 #include "include/parser.h"
 #include "include/ir_visitor.h"
 #include "include/exception/parse_exception.h"
+#include "include/exception/ir_exception.h"
 
 int main(int argc, char *argv[]) {
 	Parser parser(std::cerr);
@@ -29,6 +30,8 @@ int main(int argc, char *argv[]) {
 		}
 	} catch(ParseException pe) {
 		std::cerr << pe.what();
+	} catch(IRException ie) {
+		std::cerr << ie.what();
 	}
 	return -1;
 }

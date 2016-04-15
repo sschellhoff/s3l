@@ -1,5 +1,6 @@
 #include "include/ir_visitor.h"
 
+#include "include/exception/ir_exception.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/raw_os_ostream.h"
 
@@ -12,8 +13,7 @@ llvm::Type *IRVisitor::typeConversion(Type type)const {
 		case Type::REAL:
 			return llvm::Type::getDoubleTy(llvm::getGlobalContext());
 		default:
-			fprintf(stderr, "wrong operator\n");
-			return nullptr;
+			throw IRException("wrong operator");
 	}
 }
 
@@ -68,10 +68,7 @@ void IRVisitor::visit(BinaryExpressionAST *ast) {
 				currentValue = builder.CreateFCmpUGE(lhs, rhs, "geFloat");
 				break;
 			default:
-				fprintf(stderr, "wrong operator\n");
-				// error
-				// currentValue = nullptr;
-				break;
+				throw IRException("wrong operator");
 		}
 	} else if(type == Type::INT) {
 		switch (ast->getOperator()) {
@@ -108,10 +105,7 @@ void IRVisitor::visit(BinaryExpressionAST *ast) {
 			case Operator::MOD:
 				currentValue = builder.CreateSRem(lhs, rhs, "modInt");
 			default:
-				fprintf(stderr, "wrong operator\n");
-				// error
-				// currentValue = nullptr;
-				break;
+				throw IRException("wrong operator");
 		}
 	} else if(type == Type::BOOL) {
 		switch(ast->getOperator()) {
@@ -140,10 +134,7 @@ void IRVisitor::visit(BinaryExpressionAST *ast) {
 			}
 			break;
 			default:
-			fprintf(stderr, "wrong operator\n");
-			// error
-			// currentValue = nullptr;
-			break;
+				throw IRException("wrong operator");
 		}
 	}
 }
@@ -151,8 +142,7 @@ void IRVisitor::visit(BinaryExpressionAST *ast) {
 void IRVisitor::visit(FunctionCallAST *ast) {
 	 auto function = theModule->getFunction(ast->getName());
 	 if(!function) {
-		fprintf(stderr, "call to unknown function\n");
-	 	return;
+		 throw IRException("call to unknown function");
 	 }
 	 auto &arguments = ast->getArguments();
 	 std::vector<llvm::Value*> argValues;
@@ -184,17 +174,13 @@ void IRVisitor::visit(FunctionDefinitionAST *ast) {
 	} else if(ast->getType() == Type::VOID) {
 		funcType = llvm::FunctionType::get(llvm::Type::getVoidTy(llvm::getGlobalContext()), args, false);
 	} else {
-		fprintf(stderr, "could not create function\n");
-		// error
-		return;
+		throw IRException("could not create function");
 	}
 
 	llvm::Function *func = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, ast->getName(), theModule.get());
 
 	if(!func) {
-		fprintf(stderr, "could not create function\n");
-		// error
-		return;
+		throw IRException("could not create function");
 	}
 
 	llvm::BasicBlock *block = llvm::BasicBlock::Create(llvm::getGlobalContext(), "entry", func);
@@ -219,10 +205,9 @@ void IRVisitor::visit(FunctionDefinitionAST *ast) {
 		environments.pop();
 		return;
 	}
-	fprintf(stderr, "could not create function body\n");
-	// error
 	func->eraseFromParent();
 	environments.pop();
+	throw IRException("could not create function body");
 }
 
 void IRVisitor::visit(UnaryOperatorAST *ast) {
@@ -243,19 +228,13 @@ void IRVisitor::visit(UnaryOperatorAST *ast) {
 			currentValue = builder.CreateFSub(zero_const, currentValue, "subFloat");
 			break;
 		}
-		default:
-		{
-			fprintf(stderr, "unknown unary operator");
-			return;
-		}
 	}
 }
 
 void IRVisitor::visit(VariableAST *ast) {
 	auto name = ast->getName();
 	if(!environments.top().isDefined(name)) {
-		fprintf(stderr, "Variable(%s) not found\n", name.c_str());
-		return;
+		throw IRException(std::string("variable not found: ", name.c_str()));
 	}
 	auto var = environments.top().getValue(name).getIRVariable();
 	currentValue = builder.CreateLoad(var, false, name);
@@ -345,7 +324,6 @@ void IRVisitor::visit(IfAST *ast) {
 	}
 }
 
-
 void IRVisitor::visit(WhileAST *ast) {
 	auto condition = ast->getCondition();
 	auto block = ast->getBlock();
@@ -365,12 +343,6 @@ void IRVisitor::visit(WhileAST *ast) {
 	block->accept(*this);
 	builder.CreateBr(condBBlock);
 	builder.SetInsertPoint(afterBBlock);
-}
-
-void IRVisitor::print() {
-	if(currentValue) {
-		currentValue->dump();
-	}
 }
 
 void IRVisitor::printModule() {

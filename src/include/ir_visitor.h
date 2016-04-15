@@ -47,7 +47,6 @@ public:
 	virtual void visit(IfAST *ast);
 	virtual void visit(WhileAST *ast);
 
-	void print();
 	void printModule();
 	void writeModule(std::ostream &outStream);
 };
