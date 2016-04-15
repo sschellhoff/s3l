@@ -74,8 +74,45 @@ void IRVisitor::visit(BinaryExpressionAST *ast) {
 				break;
 		}
 	} else if(type == Type::INT) {
-		fprintf(stderr, "int not implemented in ir\n");
-
+		switch (ast->getOperator()) {
+			case Operator::ADD:
+				currentValue = builder.CreateAdd(lhs, rhs, "addInt");
+				break;
+			case Operator::SUB:
+				currentValue = builder.CreateSub(lhs, rhs, "subInt");
+				break;
+			case Operator::MULT:
+				currentValue = builder.CreateMul(lhs, rhs, "multInt");
+				break;
+			case Operator::DIV:
+				currentValue = builder.CreateFDiv(lhs, rhs, "divInt");
+				break;
+			case Operator::EQ:
+				currentValue = builder.CreateICmpEQ(lhs, rhs, "eqInt");
+				break;
+			case Operator::NE:
+				currentValue = builder.CreateICmpNE(lhs, rhs, "neInt");
+				break;
+			case Operator::LT:
+				currentValue = builder.CreateICmpULT(lhs, rhs, "ltInt");
+				break;
+			case Operator::LE:
+				currentValue = builder.CreateICmpULE(lhs, rhs, "leInt");
+				break;
+			case Operator::GT:
+				currentValue = builder.CreateICmpUGT(lhs, rhs, "gtInt");
+				break;
+			case Operator::GE:
+				currentValue = builder.CreateICmpUGE(lhs, rhs, "geInt");
+				break;
+			case Operator::MOD:
+				currentValue = builder.CreateSRem(lhs, rhs, "modInt");
+			default:
+				fprintf(stderr, "wrong operator\n");
+				// error
+				// currentValue = nullptr;
+				break;
+		}
 	} else if(type == Type::BOOL) {
 		switch(ast->getOperator()) {
 			case Operator::EQ:
@@ -265,7 +302,69 @@ void IRVisitor::visit(CompositeAst *ast) {
 }
 
 void IRVisitor::visit(IfAST *ast) {
-	// must be done!!
+	auto condition = ast->getCondition();
+	auto thenBlock = ast->getThen();
+	auto elseBlock = ast->getElse();
+
+	llvm::Function *currentFunc = builder.GetInsertBlock()->getParent();
+
+	if(!elseBlock) {
+		auto condBBlock = llvm::BasicBlock::Create(llvm::getGlobalContext(), "condition", currentFunc);
+		auto thenBBlock = llvm::BasicBlock::Create(llvm::getGlobalContext(), "then", currentFunc);
+		auto afterBBlock = llvm::BasicBlock::Create(llvm::getGlobalContext(), "after", currentFunc);
+		builder.CreateBr(condBBlock);
+		builder.SetInsertPoint(condBBlock);
+		condition->accept(*this);
+		auto cond = currentValue;
+		builder.CreateCondBr(cond, thenBBlock, afterBBlock);
+
+		builder.SetInsertPoint(thenBBlock);
+		thenBlock->accept(*this);
+		builder.CreateBr(afterBBlock);
+		builder.SetInsertPoint(afterBBlock);
+	} else {
+		auto condBBlock = llvm::BasicBlock::Create(llvm::getGlobalContext(), "condition", currentFunc);
+		auto thenBBlock = llvm::BasicBlock::Create(llvm::getGlobalContext(), "then", currentFunc);
+		auto elseBBlock = llvm::BasicBlock::Create(llvm::getGlobalContext(), "else", currentFunc);
+		auto afterBBlock = llvm::BasicBlock::Create(llvm::getGlobalContext(), "after", currentFunc);
+
+		builder.CreateBr(condBBlock);
+		builder.SetInsertPoint(condBBlock);
+		condition->accept(*this);
+		auto cond = currentValue;
+		builder.CreateCondBr(cond, thenBBlock, elseBBlock);
+
+		builder.SetInsertPoint(thenBBlock);
+		thenBlock->accept(*this);
+		builder.CreateBr(afterBBlock);
+
+		builder.SetInsertPoint(elseBBlock);
+		elseBlock->accept(*this);
+		builder.CreateBr(afterBBlock);
+		builder.SetInsertPoint(afterBBlock);
+	}
+}
+
+
+void IRVisitor::visit(WhileAST *ast) {
+	auto condition = ast->getCondition();
+	auto block = ast->getBlock();
+
+	llvm::Function *currentFunc = builder.GetInsertBlock()->getParent();
+
+	auto condBBlock = llvm::BasicBlock::Create(llvm::getGlobalContext(), "condition", currentFunc);
+	auto loopBBlock = llvm::BasicBlock::Create(llvm::getGlobalContext(), "loop", currentFunc);
+	auto afterBBlock = llvm::BasicBlock::Create(llvm::getGlobalContext(), "after", currentFunc);
+
+	builder.CreateBr(condBBlock);
+	builder.SetInsertPoint(condBBlock);
+	condition->accept(*this);
+	auto cond = currentValue;
+	builder.CreateCondBr(cond, loopBBlock, afterBBlock);
+	builder.SetInsertPoint(loopBBlock);
+	block->accept(*this);
+	builder.CreateBr(condBBlock);
+	builder.SetInsertPoint(afterBBlock);
 }
 
 void IRVisitor::print() {

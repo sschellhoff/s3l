@@ -15,6 +15,8 @@ private:
 	std::vector<UnaryOperator> unaryOperators;
 	std::string input;
 	unsigned int currentPos;
+	unsigned short currentLine;
+	unsigned short currentColumn;
 	void skipWhitespaces();
 	bool inputLeft()const;
 	void initOperators();

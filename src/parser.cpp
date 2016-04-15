@@ -3,11 +3,12 @@
 #include "include/mangling.h"
 #include "include/variable.h"
 #include "include/asts.h"
+#include "include/exception/parse_exception.h"
 
 #include <algorithm>
 #include <fstream>
 
-Parser::Parser(std::ostream &errorStream):currentToken(TokenType::ERROR), currentFunctionsResultType(Type::VOID), errorStream(errorStream), functionASTs(std::make_unique<std::vector<std::unique_ptr<FunctionDefinitionAST>>>()) {
+Parser::Parser(std::ostream &errorStream):currentToken(TokenType::ERROR, 1, 1), currentFunctionsResultType(Type::VOID), errorStream(errorStream), functionASTs(std::make_unique<std::vector<std::unique_ptr<FunctionDefinitionAST>>>()) {
 	operatorPrecedences[Operator::OR] = 30;
 	operatorPrecedences[Operator::AND] = 40;
 	operatorPrecedences[Operator::EQ] = 50;
@@ -27,6 +28,8 @@ bool Parser::isValidOperator(const Operator op, const Type t1, const Type t2)con
 		return false;
 	}
 	switch(op) {
+		case Operator::MOD:
+			return t1 == Type::INT;
 		case Operator::EQ:
 		case Operator::NE:
 			return true;
@@ -65,6 +68,7 @@ Type Parser::determineOperatorResult(const Operator op, const Type t1, const Typ
 		case Operator::SUB:
 		case Operator::MULT:
 		case Operator::DIV:
+		case Operator::MOD:
 			return t1;
 		default:
 			return Type::VOID;
@@ -98,7 +102,8 @@ bool Parser::isValidOperator(const UnaryOperator op, const Type t1)const {
 }
 
 void Parser::makeError(const std::string &msg) {
-	errorStream << msg << std::endl;
+	throw ParseException(msg, currentToken.getLine(), currentToken.getColumn());
+	//errorStream << "error in line: " << currentToken.getLine() << ", column: " << currentToken.getColumn() << " ( " << msg << " )" << std::endl;
 }
 
 void Parser::consumeToken() {
@@ -514,6 +519,10 @@ ASTPTR Parser::parseReturn() {
 	}
 	consumeToken();
 	if(currentToken.getTokenType() == TokenType::SEMICOLON) {
+		if(currentFunctionsResultType != Type::VOID) {
+			makeError("return statement does not match functions result type");
+			return nullptr;
+		}
 		consumeToken();
 		return std::make_unique<ReturnAST>();
 	}
@@ -537,7 +546,7 @@ ASTPTR Parser::parseBlock() {
 	}
 	consumeToken();
 	std::vector<ASTPTR> statements;
-	bool block_has_return = currentFunctionsResultType == Type::VOID ? true : false;
+	bool block_has_return = currentFunctionsResultType != Type::VOID;// ? true : false;
 	while(currentToken.getTokenType() != TokenType::EOI && currentToken.getTokenType() != TokenType::RBLOCK) {
 		ASTPTR result;
 		switch(currentToken.getTokenType()) {
@@ -551,11 +560,6 @@ ASTPTR Parser::parseBlock() {
 				result = parseBlock();
 			}
 			break;
-			case TokenType::IDENTIFIER:
-			{
-				result = parseIdentifierStatement();
-			}
-			break;
 			case TokenType::IF:
 			{
 				result = parseIf();
@@ -564,6 +568,11 @@ ASTPTR Parser::parseBlock() {
 			case TokenType::LOOP:
 			{
 				result = parseLoop();
+			}
+			break;
+			case TokenType::IDENTIFIER:
+			{
+				result = parseIdentifierStatement();
 			}
 			break;
 			default:
@@ -724,5 +733,22 @@ ASTPTR Parser::parseIf() {
 }
 
 ASTPTR Parser::parseLoop() {
-
+	if(currentToken.getTokenType() != TokenType::LOOP) {
+		makeError("expected loop construct");
+		return nullptr;
+	}
+	consumeToken();
+	auto condition = parseExpression();
+	if(!condition) {
+		return nullptr;
+	}
+	if(condition->getType() != Type::BOOL) {
+		makeError("condition must be of type bool");
+		return nullptr;
+	}
+	auto block = parseBlock();
+	if(!block) {
+		return nullptr;
+	}
+	return std::make_unique<WhileAST>(std::move(condition), std::move(block));
 }

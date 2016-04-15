@@ -31,6 +31,9 @@ bin/
 # Intermediate Representation
 *.ir
 
+# asm files
+*.s
+
 # Shell Scripts
 *.sh
 

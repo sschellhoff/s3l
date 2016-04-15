@@ -1,3 +1,14 @@
+calc(a int) int;
+
+calc(a int) int {
+	if a > 1 {
+		return a * calc(a - 1)
+	} else {
+		return 1
+	}
+	return 0
+}
+
 main() int {
-	return 42
+	return calc(5)
 }

@@ -27,9 +27,11 @@ class Token {
 private:
 	int valueIndex;
 	TokenType type;
+	unsigned short column;
+	unsigned short line;
 public:
-	Token(TokenType type):type(type) {}
-	Token(TokenType type, int valueIndex):valueIndex(valueIndex), type(type) {}
+	Token(TokenType type, unsigned short col, unsigned short line):type(type), column(col), line(line) {}
+	Token(TokenType type, int valueIndex, unsigned short col, unsigned short line):valueIndex(valueIndex), type(type), column(col), line(line)  {}
 
 	int getValueIndex() const {
 		return valueIndex;
@@ -37,5 +39,13 @@ public:
 
 	TokenType getTokenType() const {
 		return type;
+	}
+
+	unsigned short getLine()const {
+		return line;
+	}
+
+	unsigned short getColumn()const {
+		return column;
 	}
 };

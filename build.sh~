@@ -1,0 +1,5 @@
+./test.sh
+llc check.ir
+gcc check.ir.s
+./a.out
+echo $?

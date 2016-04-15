@@ -13,7 +13,8 @@ enum class Operator {
 	NE,
 	AND,
 	OR,
-	IMPL
+	IMPL,
+	MOD
 };
 
 enum class UnaryOperator {

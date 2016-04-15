@@ -1,5 +1,5 @@
 #include "include/lexer.h"
-#include "include/token.h"
+#include "include/AutoCounter.h"
 
 #include <sstream>
 #include <algorithm>
@@ -8,7 +8,7 @@ Lexer::Lexer() {
 	initOperators();
 }
 
-Lexer::Lexer(const std::string &input):input(input), currentPos(0) {
+Lexer::Lexer(const std::string &input):input(input), currentPos(0), currentLine(1), currentColumn(1) {
 	initOperators();
 }
 
@@ -27,6 +27,7 @@ void Lexer::initOperators() {
 	operators.push_back(Operator::AND);
 	operators.push_back(Operator::OR);
 	operators.push_back(Operator::IMPL);
+	operators.push_back(Operator::MOD);
 
 	unaryOperators.push_back(UnaryOperator::NOT);
 }
@@ -54,12 +55,17 @@ int Lexer::addIntConstant(int val) {
 }
 
 void Lexer::setInput(const std::string &input) {
+	currentColumn = 1;
+	currentLine = 1;
 	this->input = input;
 	currentPos = 0;
 }
 
 Token Lexer::getNext() {
 	skipWhitespaces();
+
+	AutoCounter ac(currentPos, currentPos, currentColumn);
+
 	if(inputLeft()) {
 		if(isdigit(input[currentPos])) {
 			std::stringstream buffer;
@@ -78,11 +84,11 @@ Token Lexer::getNext() {
 				}
 				auto element = std::stod(buffer.str(), nullptr);
 				auto index = addRealConstant(element);
-				return Token(TokenType::REAL, index);
+				return Token(TokenType::REAL, index, currentColumn, currentLine);
 			} else {
 				auto element = std::stoi(buffer.str(), nullptr);
 				auto index = addIntConstant(element);
-				return Token(TokenType::INT, index); // INT
+				return Token(TokenType::INT, index, currentColumn, currentLine); // INT
 			}
 		} else if(isalpha(input[currentPos]) || input[currentPos] == '_') {
 			std::stringstream buffer;
@@ -94,118 +100,127 @@ Token Lexer::getNext() {
 			}
 			auto identifierValue = buffer.str();
 			if(identifierValue == "true") {
-				return Token(TokenType::BOOL, 1);
+				return Token(TokenType::BOOL, 1, currentColumn, currentLine);
 			} else if(identifierValue == "false") {
-				return Token(TokenType::BOOL, 0);
+				return Token(TokenType::BOOL, 0, currentColumn, currentLine);
 			} else if(identifierValue == "return") {
-				return Token(TokenType::RETURN, 0);
+				return Token(TokenType::RETURN, currentColumn, currentLine);
 			} else if(identifierValue == "if") {
-				return Token(TokenType::IF);
+				return Token(TokenType::IF, currentColumn, currentLine);
 			} else if(identifierValue == "else") {
-				return Token(TokenType::ELSE);
+				return Token(TokenType::ELSE, currentColumn, currentLine);
 			} else if(identifierValue == "loop") {
-				return Token(TokenType::LOOP);
+				return Token(TokenType::LOOP, currentColumn, currentLine);
 			}
 			int index = identifier.size();
 			identifier.push_back(buffer.str());
-			return Token(TokenType::IDENTIFIER, index);
+			return Token(TokenType::IDENTIFIER, index, currentColumn, currentLine);
 		} else {
 			switch(input[currentPos]) {
 				case '+':
 					currentPos++;
-					return Token(TokenType::OPERATOR, 0);
+					return Token(TokenType::OPERATOR, 0, currentColumn, currentLine);
 				case '-':
 					currentPos++;
-					return Token(TokenType::OPERATOR, 1);
+					return Token(TokenType::OPERATOR, 1, currentColumn, currentLine);
 				case '*':
 					currentPos++;
-					return Token(TokenType::OPERATOR, 2);
+					return Token(TokenType::OPERATOR, 2, currentColumn, currentLine);
 				case '/':
 					currentPos++;
-					return Token(TokenType::OPERATOR, 3);
+					return Token(TokenType::OPERATOR, 3, currentColumn, currentLine);
 				case '<':
 					currentPos++;
 					if(inputLeft() && input[currentPos] == '=') {
 						currentPos++;
-						return Token(TokenType::OPERATOR, 5);
+						return Token(TokenType::OPERATOR, 5, currentColumn, currentLine);
 					}
-					return Token(TokenType::OPERATOR, 4);
+					return Token(TokenType::OPERATOR, 4, currentColumn, currentLine);
 				case '>':
 					currentPos++;
 					if(inputLeft() && input[currentPos] == '=') {
 						currentPos++;
-						return Token(TokenType::OPERATOR, 7);
+						return Token(TokenType::OPERATOR, 7, currentColumn, currentLine);
 					}
-					return Token(TokenType::OPERATOR, 6);
+					return Token(TokenType::OPERATOR, 6, currentColumn, currentLine);
 				case '(':
 					currentPos++;
-					return Token(TokenType::LPAR, 0);
+					return Token(TokenType::LPAR, 0, currentColumn, currentLine);
 				case ')':
 					currentPos++;
-					return Token(TokenType::RPAR, 0);
+					return Token(TokenType::RPAR, 0, currentColumn, currentLine);
 				case '{':
 					currentPos++;
-					return Token(TokenType::LBLOCK, 0);
+					return Token(TokenType::LBLOCK, 0, currentColumn, currentLine);
 				case '}':
 					currentPos++;
-					return Token(TokenType::RBLOCK, 1);
+					return Token(TokenType::RBLOCK, 1, currentColumn, currentLine);
 				case '=':
 					currentPos++;
 					if(inputLeft() && input[currentPos] == '=') {
 						currentPos++;
-						return Token(TokenType::OPERATOR, 8);
+						return Token(TokenType::OPERATOR, 8, currentColumn, currentLine);
 					} else if( inputLeft() && input[currentPos] == '>') {
 						currentPos++;
-						return Token(TokenType::OPERATOR, 12);
+						return Token(TokenType::OPERATOR, 12, currentColumn, currentLine);
 					}
-					return Token(TokenType::ASSIGN);
+					return Token(TokenType::ASSIGN, currentColumn, currentLine);
 				case '!':
 					currentPos++;
 					if(inputLeft() && input[currentPos] == '=') {
 						currentPos++;
-						return Token(TokenType::OPERATOR, 9);
+						return Token(TokenType::OPERATOR, 9, currentColumn, currentLine);
 					}
-					return Token(TokenType::UNARYOPERATOR, 0);
+					return Token(TokenType::UNARYOPERATOR, 0, currentColumn, currentLine);
 				case '&':
 					currentPos++;
 					if(inputLeft() && input[currentPos] == '&') {
 						currentPos++;
-						return Token(TokenType::OPERATOR, 10);
+						return Token(TokenType::OPERATOR, 10, currentColumn, currentLine);
 					}
-					return Token(TokenType::ERROR);
+					return Token(TokenType::ERROR, currentColumn, currentLine);
 				case '|':
 					currentPos++;
 					if(inputLeft() && input[currentPos] == '|') {
 						currentPos++;
-						return Token(TokenType::OPERATOR, 11);
+						return Token(TokenType::OPERATOR, 11, currentColumn, currentLine);
 					}
-					return Token(TokenType::ERROR);
+					return Token(TokenType::ERROR, currentColumn, currentLine);
+				case '%':
+					currentPos++;
+					return Token(TokenType::OPERATOR, 13, currentColumn, currentLine);
 				case ';':
 					currentPos++;
-					return Token(TokenType::SEMICOLON);
+					return Token(TokenType::SEMICOLON, currentColumn, currentLine);
 				case ',':
 					currentPos++;
-					return Token(TokenType::SEPARATOR);
+					return Token(TokenType::SEPARATOR, currentColumn, currentLine);
 				case ':':
 					currentPos++;
 					if(inputLeft() && input[currentPos] == '=') {
 						currentPos++;
-						return Token(TokenType::DEFINE);
+						return Token(TokenType::DEFINE, currentColumn, currentLine);
 					}
-					return Token(TokenType::ERROR);
+					return Token(TokenType::ERROR, currentColumn, currentLine);
 				default:
 				break;
 			}
 		}
 	} else {
-		return Token(TokenType::EOI);
+		return Token(TokenType::EOI, currentColumn, currentLine);
 	}
 	currentPos++;
-	return Token(TokenType::ERROR);
+	return Token(TokenType::ERROR, currentColumn, currentLine);
 }
 
 void Lexer::skipWhitespaces() {
 	for(unsigned int length = input.length(); currentPos < length && isspace(input[currentPos]); currentPos++) {
+		if(input[currentPos] == '\n') {
+			currentLine++;
+			currentColumn = 1;
+		} else {
+			currentColumn++;
+		}
 	}
 }
 
