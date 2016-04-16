@@ -17,7 +17,10 @@ private:
 	unsigned int currentPos;
 	unsigned short currentLine;
 	unsigned short currentColumn;
-	void skipWhitespaces();
+	void skipWhitespacesAndComments();
+	bool skipWhitespaces();
+	bool skipBlockComment();
+	bool skipComment();
 	bool inputLeft()const;
 	void initOperators();
 	int addRealConstant(double val);

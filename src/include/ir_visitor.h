@@ -29,6 +29,7 @@ private:
 	IRENVSTACK environments;
 	FUNCMAP functionMap;
 	llvm::Type *typeConversion(Type type)const;
+	void addConstResult(Type type);
 public:
 	IRVisitor():theModule(std::make_unique<llvm::Module>("my llvm module", llvm::getGlobalContext())), builder(llvm::getGlobalContext()){}
 	virtual void visit(IntConstAST *ast);
@@ -47,8 +48,7 @@ public:
 	virtual void visit(IfAST *ast);
 	virtual void visit(WhileAST *ast);
 
-	void addConstResult(Type type);
-
+	void build(const std::vector<std::unique_ptr<FunctionDefinitionAST>> &functions);
 	void printModule();
 	void writeModule(std::ostream &outStream);
 };

@@ -15,10 +15,9 @@ int main(int argc, char *argv[]) {
 			std::cout << "parsing complete" << std::endl;
 
 			IRVisitor ir_builder;
-			for(auto &ast : *result) {
-				ast->accept(ir_builder);
-			}
+			ir_builder.build(*result.get());
 			ir_builder.printModule();
+
 			std::ofstream file;
 			file.open("check.ir");
 			ir_builder.writeModule(file);

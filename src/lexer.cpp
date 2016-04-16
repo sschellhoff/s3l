@@ -62,7 +62,12 @@ void Lexer::setInput(const std::string &input) {
 }
 
 Token Lexer::getNext() {
-	skipWhitespaces();
+	try {
+
+	} catch(int i) {
+
+	}
+	skipWhitespacesAndComments();
 
 	AutoCounter ac(currentPos, currentPos, currentColumn);
 
@@ -213,8 +218,14 @@ Token Lexer::getNext() {
 	return Token(TokenType::ERROR, currentColumn, currentLine);
 }
 
-void Lexer::skipWhitespaces() {
+void Lexer::skipWhitespacesAndComments() {
+	while(skipWhitespaces() || skipBlockComment() || skipComment()) {}
+}
+
+bool Lexer::skipWhitespaces() {
+	bool result = false;
 	for(unsigned int length = input.length(); currentPos < length && isspace(input[currentPos]); currentPos++) {
+		result = true;
 		if(input[currentPos] == '\n') {
 			currentLine++;
 			currentColumn = 1;
@@ -222,6 +233,39 @@ void Lexer::skipWhitespaces() {
 			currentColumn++;
 		}
 	}
+	return result;
+}
+
+bool Lexer::skipBlockComment() {
+	bool result = false;
+	if(input.length() > currentPos + 1 && input[currentPos] == '/' && input[currentPos + 1] == '/') {
+		currentPos += 2;
+		result = true;
+		while(currentPos < input.length() && input[currentPos] != '\n') {
+			currentPos++;
+			currentColumn;
+		}
+		if(currentPos < input.length() && input[currentPos] == '\n') {
+			currentColumn = 1;
+			currentLine++;
+		}
+	}
+	return result;
+}
+
+bool Lexer::skipComment() {
+	if(input.length() > currentPos + 3 && input[currentPos] == '/' && input[currentPos+1] == '*') {
+		currentPos += 2;
+		while(input.length() > currentPos + 1) {
+			if(input[currentPos] == '*' && input[currentPos+1] == '/') {
+				currentPos += 2;
+				return true;
+			}
+			currentPos++;
+		}
+		throw "";
+	}
+	return false;
 }
 
 bool Lexer::inputLeft() const {

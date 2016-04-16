@@ -3,7 +3,7 @@
 IfAST::IfAST(ASTPTR cond, ASTPTR thenBlock):AST(Type::VOID), cond(std::move(cond)), thenBlock(std::move(thenBlock)), elseBlock(nullptr) {
 }
 
-IfAST::IfAST(ASTPTR cond, ASTPTR thenBlock, ASTPTR elseBlock):AST(Type::VOID), cond(std::move(cond)), thenBlock(std::move(thenBlock)), elseBlock(std::move(elseBlock)) {
+IfAST::IfAST(ASTPTR cond, ASTPTR thenBlock, ASTPTR elseBlock):AST(thenBlock->getType() == elseBlock->getType() ? thenBlock->getType() : Type::VOID), cond(std::move(cond)), thenBlock(std::move(thenBlock)), elseBlock(std::move(elseBlock)) {
 }
 
 void IfAST::accept(Visitor &visitor) {

@@ -164,25 +164,12 @@ void IRVisitor::visit(FunctionDefinitionAST *ast) {
 	for(auto &arg : arguments) {
 		args.push_back(typeConversion(arg.getType()));
 	}
-	llvm::FunctionType *funcType;
-	if(ast->getType() == Type::INT) {
-		funcType = llvm::FunctionType::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), args, false);
-	} else if(ast->getType() == Type::BOOL) {
-		funcType = llvm::FunctionType::get(llvm::Type::getInt1Ty(llvm::getGlobalContext()), args, false);
-	} else if(ast->getType() == Type::REAL) {
-		funcType = llvm::FunctionType::get(llvm::Type::getDoubleTy(llvm::getGlobalContext()), args, false);
-	} else if(ast->getType() == Type::VOID) {
-		funcType = llvm::FunctionType::get(llvm::Type::getVoidTy(llvm::getGlobalContext()), args, false);
-	} else {
-		throw IRException("could not create function");
-	}
 
-	llvm::Function *func = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, ast->getName(), theModule.get());
+	llvm::Function *func = theModule->getFunction(ast->getName());
 
 	if(!func) {
 		throw IRException("could not create function");
 	}
-
 	llvm::BasicBlock *block = llvm::BasicBlock::Create(llvm::getGlobalContext(), "entry", func);
 	builder.SetInsertPoint(block);
 
@@ -365,6 +352,41 @@ void IRVisitor::addConstResult(Type type) {
 		case Type::VOID:
 			builder.CreateRetVoid();
 			break;
+	}
+}
+
+void IRVisitor::build(const std::vector<std::unique_ptr<FunctionDefinitionAST>> &functions) {
+	for(auto &ast : functions) {
+		auto resultType = ast->getType();
+		auto arguments = ast->getArguments();
+		auto name = ast->getName();
+
+		std::vector<llvm::Type*> args;
+		for(auto &arg : arguments) {
+			args.push_back(typeConversion(arg.getType()));
+		}
+		llvm::FunctionType *funcType;
+		if(ast->getType() == Type::INT) {
+			funcType = llvm::FunctionType::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), args, false);
+		} else if(ast->getType() == Type::BOOL) {
+			funcType = llvm::FunctionType::get(llvm::Type::getInt1Ty(llvm::getGlobalContext()), args, false);
+		} else if(ast->getType() == Type::REAL) {
+			funcType = llvm::FunctionType::get(llvm::Type::getDoubleTy(llvm::getGlobalContext()), args, false);
+		} else if(ast->getType() == Type::VOID) {
+			funcType = llvm::FunctionType::get(llvm::Type::getVoidTy(llvm::getGlobalContext()), args, false);
+		} else {
+			throw IRException("could not create function");
+		}
+
+		llvm::Function *func = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, ast->getName(), theModule.get());
+
+		if(!func) {
+			throw IRException("could not create function");
+		}
+	}
+
+	for(auto &ast : functions) {
+		ast->accept(*this);
 	}
 }
 

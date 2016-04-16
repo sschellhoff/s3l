@@ -11,8 +11,8 @@ public:
     IRException(const std::string &msg) : msg(msg) {}
     virtual const char *what()const throw() {
         std::stringstream sstream;
-        sstream << "IR ERROR - " << msg;
-        std::string result;
+        sstream << "IR ERROR - " << msg << std::endl;
+        std::string result = sstream.str();
         return result.c_str();
     }
 };

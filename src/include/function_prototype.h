@@ -44,6 +44,7 @@ public:
 	}
 
 	bool equals(const std::string &name, Type resultType, std::vector<Type> &argumentTypes) {
+
 		if(this->name != name)
 			return false;
 		if(this->result != resultType)

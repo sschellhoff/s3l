@@ -468,6 +468,7 @@ bool Parser::parseFunctionDefinition() {
 		}
 	}
 	currentFunctionsResultType = resultType;
+
 	if(currentToken.getTokenType() == TokenType::LBLOCK) {
 		auto body = parseBlock();
 		if(!body) {
@@ -491,6 +492,7 @@ bool Parser::parseFunctionDefinition() {
 		return true;
 	} else if(currentToken.getTokenType() == TokenType::SEMICOLON) {
 		consumeToken();
+
 		if(isFunctionDefined(functionName, argumentTypes)) {
 			if(!isFunctionDefined(functionName, resultType, argumentTypes)) {
 				makeError("function already defined with other result type");
@@ -546,7 +548,7 @@ ASTPTR Parser::parseBlock() {
 	}
 	consumeToken();
 	std::vector<ASTPTR> statements;
-	bool block_has_return = currentFunctionsResultType != Type::VOID;// ? true : false;
+	bool block_has_return = currentFunctionsResultType == Type::VOID;// ? true : false;
 	while(currentToken.getTokenType() != TokenType::EOI && currentToken.getTokenType() != TokenType::RBLOCK) {
 		ASTPTR result;
 		switch(currentToken.getTokenType()) {
